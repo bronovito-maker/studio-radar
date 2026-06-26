@@ -1,0 +1,89 @@
+# Architettura
+
+## Stack target
+
+- Frontend: Next.js App Router, React, TypeScript.
+- Styling: Tailwind CSS + componenti accessibili.
+- Backend: Next.js Route Handlers e Server Actions dove appropriate.
+- Database: Supabase PostgreSQL.
+- Auth: Supabase Auth.
+- AI: provider astratto, prima implementazione Anthropic o OpenAI da scegliere in sviluppo.
+- Maps: Google Places API.
+- Cron: Vercel Cron o scheduler equivalente.
+- Test: Vitest per logica, Playwright per flussi principali.
+
+## Moduli principali
+
+```text
+app/
+  auth/
+  dashboard/
+  leads/
+  search/
+  import/
+  settings/
+
+lib/
+  auth/
+  db/
+  leads/
+  scoring/
+  places/
+  outreach/
+  audit/
+  validation/
+```
+
+## Flusso lead discovery
+
+```text
+Utente o cron
+  -> richiesta categoria + zona
+  -> Google Places
+  -> normalizzazione risultati
+  -> deduplica
+  -> scoring deterministico
+  -> scoring AI se necessario
+  -> salvataggio lead + score + audit
+  -> visualizzazione in CRM
+```
+
+## Backend-for-frontend
+
+Le UI non chiamano direttamente servizi esterni sensibili. Le chiavi Google, AI e service role Supabase restano solo lato server.
+
+## API interne previste
+
+- `GET /api/stats`
+- `GET /api/leads`
+- `PATCH /api/leads/:id`
+- `POST /api/leads/import`
+- `POST /api/search`
+- `POST /api/outreach/mark-sent`
+- `GET /api/settings`
+- `PATCH /api/settings`
+- `GET /api/cron/scan`
+
+Tutte le API sono protette da autenticazione o secret dedicato nel caso del cron.
+
+## Gestione cron
+
+Il cron esegue scansioni piccole e idempotenti.
+
+Regole:
+
+- massimo numero di risultati per run;
+- lock su `scan_runs` per evitare concorrenza;
+- retry controllato;
+- log esplicito di successo/fallimento;
+- nessun invio outreach automatico.
+
+## Osservabilita
+
+Fin dall'MVP servono:
+
+- tabella `audit_events`;
+- tabella `scan_runs`;
+- logging server side sugli errori;
+- messaggi utente chiari senza esporre dettagli interni.
+
