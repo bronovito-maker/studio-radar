@@ -165,6 +165,15 @@ h2 {
   gap: 10px;
 }
 
+.user-label {
+  max-width: 220px;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .icon-button,
 .primary-button,
 .secondary-button {
@@ -314,6 +323,82 @@ h2 {
   color: var(--muted);
 }
 
+.login-page {
+  display: grid;
+  min-height: 100vh;
+  place-items: center;
+  padding: 24px;
+}
+
+.login-panel {
+  width: min(100%, 430px);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  box-shadow: var(--shadow);
+  padding: 28px;
+}
+
+.login-brand {
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--line);
+}
+
+.login-copy {
+  margin-top: 28px;
+}
+
+.login-copy h1 {
+  font-size: 30px;
+}
+
+.login-copy p:last-child {
+  margin-bottom: 0;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.login-form {
+  display: grid;
+  gap: 18px;
+  margin-top: 28px;
+}
+
+.login-form label {
+  display: grid;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.login-form input {
+  min-height: 44px;
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  outline: none;
+  background: var(--panel-soft);
+  color: var(--foreground);
+  padding: 0 12px;
+}
+
+.login-form input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.form-error {
+  margin: 0;
+  color: #b42318;
+  font-size: 13px;
+}
+
+.login-submit {
+  width: 100%;
+  min-height: 44px;
+}
+
 @media (max-width: 980px) {
   .app-shell {
     grid-template-columns: 1fr;
@@ -352,6 +437,12 @@ h2 {
 
   .topbar-actions {
     width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .user-label {
+    width: 100%;
+    max-width: none;
   }
 
   .primary-button {
@@ -367,4 +458,3 @@ h2 {
     text-align: left;
   }
 }
-

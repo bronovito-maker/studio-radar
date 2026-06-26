@@ -14,8 +14,8 @@ Questo file descrive le variabili previste. I valori reali non vanno committati.
 | Nome | Obbligatoria | Note |
 |---|---|---|
 | `NEXT_PUBLIC_SUPABASE_URL` | si | Pubblica |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | si | Pubblica, protetta da RLS |
-| `SUPABASE_SERVICE_ROLE_KEY` | si server | Mai nel client |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | si | Pubblica, protetta da RLS |
+| `SUPABASE_SECRET_KEY` | futuro server | Mai nel client; solo per operazioni amministrative |
 
 ## Cron
 
@@ -54,4 +54,3 @@ Una sola delle seguenti famiglie sara richiesta in base alla scelta provider.
 | `GOOGLE_SHEETS_CLIENT_EMAIL` | quando sync Sheets sara implementato |
 | `GOOGLE_SHEETS_PRIVATE_KEY` | quando sync Sheets sara implementato |
 | `GOOGLE_SHEETS_SPREADSHEET_ID` | quando sync Sheets sara implementato |
-

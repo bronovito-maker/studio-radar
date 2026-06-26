@@ -31,6 +31,7 @@ Costruire uno strumento interno che aiuti a:
 - [Definition of Done](docs/definition-of-done.md)
 - [Standard tecnici](docs/technical-standards.md)
 - [Variabili ambiente](docs/env-vars.md)
+- [Setup Supabase](docs/supabase-setup.md)
 - [Domande aperte](docs/open-questions.md)
 - [Decisioni architetturali](docs/adr)
 

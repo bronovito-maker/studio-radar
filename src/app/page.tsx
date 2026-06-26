@@ -11,6 +11,10 @@ import {
   Sparkles,
   Sun,
 } from "lucide-react";
+import { createClient } from "@/lib/supabase/server";
+import { logout } from "./actions";
+
+export const dynamic = "force-dynamic";
 
 const stats = [
   { label: "Lead qualificati", value: "0", detail: "Score minimo 50" },
@@ -39,7 +43,14 @@ const categories = [
   "Interior designer",
 ];
 
-export default function Home() {
+export default async function Home() {
+  const supabase = await createClient();
+  const { data } = await supabase.auth.getClaims();
+  const email =
+    typeof data?.claims?.email === "string"
+      ? data.claims.email
+      : "Utente Studio Radar";
+
   return (
     <main className="app-shell">
       <aside className="sidebar" aria-label="Navigazione principale">
@@ -84,6 +95,7 @@ export default function Home() {
             <h1>Cruscotto operativo</h1>
           </div>
           <div className="topbar-actions">
+            <span className="user-label">{email}</span>
             <button className="icon-button" type="button" aria-label="Tema chiaro">
               <Sun size={18} aria-hidden="true" />
             </button>
@@ -94,6 +106,11 @@ export default function Home() {
               <Search size={18} aria-hidden="true" />
               Nuova ricerca
             </button>
+            <form action={logout}>
+              <button className="secondary-button" type="submit">
+                Esci
+              </button>
+            </form>
           </div>
         </header>
 
@@ -170,4 +187,3 @@ export default function Home() {
     </main>
   );
 }
-

@@ -1,0 +1,273 @@
+export type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json | undefined }
+  | Json[];
+
+export type Database = {
+  __InternalSupabase: {
+    PostgrestVersion: "14.5";
+  };
+  public: {
+    Tables: {
+      profiles: {
+        Row: {
+          id: string;
+          full_name: string;
+          email: string;
+          role: Database["public"]["Enums"]["user_role"];
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id: string;
+          full_name?: string;
+          email: string;
+          role?: Database["public"]["Enums"]["user_role"];
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          full_name?: string;
+          email?: string;
+          role?: Database["public"]["Enums"]["user_role"];
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      services: {
+        Row: {
+          id: string;
+          slug: string;
+          name: string;
+          description: string | null;
+          default_value: number;
+          setup_value: number | null;
+          monthly_value: number | null;
+          is_recurring: boolean;
+          is_active: boolean;
+          sort_order: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          slug: string;
+          name: string;
+          description?: string | null;
+          default_value: number;
+          setup_value?: number | null;
+          monthly_value?: number | null;
+          is_recurring?: boolean;
+          is_active?: boolean;
+          sort_order?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["services"]["Insert"]>;
+        Relationships: [];
+      };
+      settings: {
+        Row: {
+          id: number;
+          booking_url: string | null;
+          default_score_threshold: number;
+          cron_enabled: boolean;
+          cron_schedule: string;
+          notion_sync_enabled: boolean;
+          sheets_sync_enabled: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: number;
+          booking_url?: string | null;
+          default_score_threshold?: number;
+          cron_enabled?: boolean;
+          cron_schedule?: string;
+          notion_sync_enabled?: boolean;
+          sheets_sync_enabled?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["settings"]["Insert"]>;
+        Relationships: [];
+      };
+      leads: {
+        Row: {
+          id: string;
+          business_name: string;
+          city: string | null;
+          region: string | null;
+          country: string;
+          status: Database["public"]["Enums"]["lead_status"];
+          source: Database["public"]["Enums"]["lead_source"];
+          google_place_id: string | null;
+          phone: string | null;
+          email: string | null;
+          website_url: string | null;
+          address: string | null;
+          category: string | null;
+          rating: number | null;
+          review_count: number | null;
+          has_website: boolean;
+          has_booking: boolean;
+          recommended_service_id: string | null;
+          estimated_value: number;
+          assigned_to: string | null;
+          notes: string;
+          last_contacted_at: string | null;
+          booked_at: string | null;
+          became_client_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          business_name: string;
+          city?: string | null;
+          region?: string | null;
+          country?: string;
+          status?: Database["public"]["Enums"]["lead_status"];
+          source?: Database["public"]["Enums"]["lead_source"];
+          google_place_id?: string | null;
+          phone?: string | null;
+          email?: string | null;
+          website_url?: string | null;
+          address?: string | null;
+          category?: string | null;
+          rating?: number | null;
+          review_count?: number | null;
+          has_website?: boolean;
+          has_booking?: boolean;
+          recommended_service_id?: string | null;
+          estimated_value?: number;
+          assigned_to?: string | null;
+          notes?: string;
+          last_contacted_at?: string | null;
+          booked_at?: string | null;
+          became_client_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["leads"]["Insert"]>;
+        Relationships: [];
+      };
+      lead_scores: {
+        Row: {
+          id: string;
+          lead_id: string;
+          score: number;
+          grade: Database["public"]["Enums"]["score_grade"];
+          recommended_service_id: string | null;
+          reasoning: string;
+          positive_signals: string[];
+          negative_signals: string[];
+          deterministic_score: number;
+          ai_score: number | null;
+          confidence: number | null;
+          provider: string | null;
+          model: string | null;
+          prompt_version: string | null;
+          input_snapshot: Json;
+          created_by: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          lead_id: string;
+          score: number;
+          grade: Database["public"]["Enums"]["score_grade"];
+          recommended_service_id?: string | null;
+          reasoning: string;
+          positive_signals?: string[];
+          negative_signals?: string[];
+          deterministic_score: number;
+          ai_score?: number | null;
+          confidence?: number | null;
+          provider?: string | null;
+          model?: string | null;
+          prompt_version?: string | null;
+          input_snapshot?: Json;
+          created_by?: string | null;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["lead_scores"]["Insert"]>;
+        Relationships: [];
+      };
+      lead_events: {
+        Row: {
+          id: string;
+          lead_id: string;
+          actor_id: string | null;
+          event_type: string;
+          payload: Json;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          lead_id: string;
+          actor_id?: string | null;
+          event_type: string;
+          payload?: Json;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["lead_events"]["Insert"]>;
+        Relationships: [];
+      };
+      scan_runs: {
+        Row: {
+          id: string;
+          trigger: string;
+          category: string;
+          region: string;
+          status: Database["public"]["Enums"]["scan_status"];
+          found_count: number;
+          imported_count: number;
+          duplicate_count: number;
+          error_message: string | null;
+          started_at: string;
+          finished_at: string | null;
+          created_by: string | null;
+        };
+        Insert: {
+          id?: string;
+          trigger: string;
+          category: string;
+          region: string;
+          status?: Database["public"]["Enums"]["scan_status"];
+          found_count?: number;
+          imported_count?: number;
+          duplicate_count?: number;
+          error_message?: string | null;
+          started_at?: string;
+          finished_at?: string | null;
+          created_by?: string | null;
+        };
+        Update: Partial<Database["public"]["Tables"]["scan_runs"]["Insert"]>;
+        Relationships: [];
+      };
+    };
+    Views: Record<string, never>;
+    Functions: Record<string, never>;
+    Enums: {
+      lead_source: "manual" | "csv" | "google_places";
+      lead_status:
+        | "new"
+        | "qualified"
+        | "to_contact"
+        | "contacted"
+        | "follow_up"
+        | "booked"
+        | "client"
+        | "discarded";
+      scan_status: "running" | "succeeded" | "failed";
+      score_grade: "cold" | "warm" | "hot" | "priority";
+      user_role: "admin" | "collaborator";
+    };
+    CompositeTypes: Record<string, never>;
+  };
+};
+
