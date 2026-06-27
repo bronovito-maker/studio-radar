@@ -19,6 +19,15 @@ const FIELD_MASK = [
   "places.reservable",
   "places.attributions",
 ].join(",");
+const DETAILS_FIELD_MASK = [
+  "id",
+  "displayName",
+  "formattedAddress",
+  "primaryTypeDisplayName",
+  "businessStatus",
+  "googleMapsUri",
+  "attributions",
+].join(",");
 
 const localizedTextSchema = z.object({ text: z.string(), languageCode: z.string().optional() });
 const placeSchema = z.object({
@@ -112,4 +121,37 @@ export async function searchGooglePlaces(input: {
   const parsed = responseSchema.safeParse(await response.json());
   if (!parsed.success) throw new PlacesError("INVALID_RESPONSE", "Risposta Google Places non valida");
   return parsed.data.places;
+}
+
+export async function getGooglePlaceSummary(placeId: string) {
+  const apiKey = process.env.GOOGLE_PLACES_API_KEY?.trim();
+  if (!apiKey) throw new PlacesError("NOT_CONFIGURED", "Chiave Google Places non configurata");
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 8_000);
+  try {
+    const url = new URL(`${PLACES_SEARCH_URL.replace(":searchText", "")}/${encodeURIComponent(placeId)}`);
+    url.searchParams.set("languageCode", "it");
+    url.searchParams.set("regionCode", "IT");
+    const response = await fetch(url, {
+      headers: {
+        "X-Goog-Api-Key": apiKey,
+        "X-Goog-FieldMask": DETAILS_FIELD_MASK,
+      },
+      cache: "no-store",
+      signal: controller.signal,
+    });
+    if (response.status === 404) return null;
+    if (response.status === 429) throw new PlacesError("QUOTA", "Quota Google Places temporaneamente esaurita");
+    if (!response.ok) throw new PlacesError("REQUEST_FAILED", `Google Places HTTP ${response.status}`);
+
+    const parsed = placeSchema.safeParse(await response.json());
+    if (!parsed.success) throw new PlacesError("INVALID_RESPONSE", "Risposta Google Places non valida");
+    return parsed.data;
+  } catch (error) {
+    if (error instanceof PlacesError) throw error;
+    throw new PlacesError("REQUEST_FAILED", error instanceof Error && error.name === "AbortError" ? "Timeout Google Places" : "Google Places non raggiungibile");
+  } finally {
+    clearTimeout(timeout);
+  }
 }

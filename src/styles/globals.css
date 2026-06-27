@@ -1621,7 +1621,7 @@ h2 {
 
 .discovery-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 110px 130px;
+  grid-template-columns: minmax(0, 1fr) 110px 130px 40px;
   align-items: center;
   gap: 20px;
   padding: 17px 22px;
@@ -1683,7 +1683,7 @@ h2 {
 .discovery-links,
 .place-attributions {
   color: var(--muted);
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .discovery-links a,
@@ -1727,11 +1727,17 @@ h2 {
   gap: 16px;
   padding: 14px 22px;
   color: var(--muted);
-  font-size: 11px;
+  font-size: 12px;
 }
 
-.google-disclosure > strong {
-  color: var(--foreground);
+.google-maps-attribution {
+  color: var(--muted);
+  font-family: Roboto, sans-serif;
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 400;
+  letter-spacing: 0;
+  white-space: nowrap;
 }
 
 .google-disclosure details {
@@ -1748,6 +1754,82 @@ h2 {
 .google-disclosure p {
   margin: 7px 0 0;
   line-height: 1.5;
+}
+
+.shortlist-action {
+  display: grid;
+  place-items: center;
+}
+
+.shortlist-button:disabled {
+  cursor: default;
+  border-color: var(--success);
+  background: var(--success-soft);
+  color: var(--success);
+}
+
+.shortlist-button-error {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+.candidate-panel {
+  margin-top: 14px;
+}
+
+.candidate-list {
+  border-top: 1px solid var(--line);
+}
+
+.candidate-row {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr) 40px 40px;
+  align-items: center;
+  gap: 12px;
+  min-height: 78px;
+  border-bottom: 1px solid var(--line);
+  padding: 10px 0;
+}
+
+.candidate-main {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+
+.candidate-main strong,
+.candidate-main > span,
+.candidate-main small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.candidate-main strong {
+  font-size: 13px;
+}
+
+.candidate-main > span,
+.candidate-main small {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.candidate-main .place-attributions {
+  white-space: normal;
+}
+
+.danger-icon {
+  color: var(--danger);
+}
+
+.candidate-attribution {
+  padding-top: 12px;
+  text-align: right;
+}
+
+.candidate-empty {
+  min-height: 180px;
 }
 
 .scan-history {
@@ -1850,7 +1932,7 @@ h2 {
   }
 
   .discovery-row {
-    grid-template-columns: minmax(0, 1fr) 90px 110px;
+    grid-template-columns: minmax(0, 1fr) 90px 110px 40px;
   }
 
   .scan-row {
@@ -1985,6 +2067,10 @@ h2 {
   .discovery-fields,
   .discovery-row {
     grid-template-columns: 1fr;
+  }
+
+  .discovery-row .shortlist-action {
+    justify-items: start;
   }
 
   .discovery-submit {

@@ -8,6 +8,8 @@
 - Recupero con field mask dei soli campi necessari: nome, indirizzo, telefono, sito, rating, recensioni, categoria, stato, booking, Place ID e URL Maps.
 - Score deterministico immediato sui risultati.
 - Deduplica in lettura su `google_place_id`, telefono, dominio e nome+citta.
+- Shortlist condivisa che conserva solo Place ID e contesto interno della ricerca.
+- Ricaricamento live dei candidati tramite Place Details (New) con field mask ridotta.
 - Cronologia tecnica in `scan_runs`: query, stato, conteggi, duplicati ed eventuale codice errore.
 
 ### Regole
@@ -18,6 +20,7 @@
 - Non fare scraping HTML di Google.
 - Mostrare attribuzione Google Maps e attribuzioni di terze parti insieme ai risultati.
 - Non persistere i contenuti Places restituiti dalla ricerca. I risultati sono effimeri; il Place ID puo essere conservato a tempo indeterminato.
+- Verificare e aggiornare i Place ID con piu di 12 mesi durante il futuro processo periodico di manutenzione.
 - Prima dell'import permanente, definire quali dati possono essere acquisiti da una fonte indipendente o con un trattamento compatibile con i termini applicabili.
 
 ### Attivazione locale

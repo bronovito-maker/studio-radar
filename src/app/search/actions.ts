@@ -1,6 +1,7 @@
 "use server";
 
 import { z } from "zod";
+import { revalidatePath } from "next/cache";
 import { requireViewer } from "@/lib/auth";
 import { findExistingLeadKeys } from "@/lib/leads/deduplication";
 import {
@@ -36,6 +37,7 @@ export type DiscoveryResult = {
   attributions: Array<{ provider: string; providerUri: string }>;
   score: DeterministicScoreResult;
   duplicateLeadId: string | null;
+  shortlisted: boolean;
 };
 
 export type DiscoverySearchState = {
@@ -44,6 +46,15 @@ export type DiscoverySearchState = {
   results: DiscoveryResult[];
   query?: { category: string; location: string; region: string };
 };
+
+export type ShortlistState = { status: "idle" | "saved" | "error"; message?: string };
+
+const shortlistSchema = z.object({
+  placeId: z.string().trim().min(1).max(2048),
+  category: z.enum(DISCOVERY_CATEGORIES),
+  location: z.string().trim().min(2).max(100),
+  region: z.enum(["Emilia-Romagna", "Toscana", "Lombardia"]),
+});
 
 function value(formData: FormData, key: string) {
   const candidate = formData.get(key);
@@ -119,8 +130,9 @@ export async function searchPlacesAction(
         businessCityNormalized: normalizeBusinessCityKey(place.displayName.text, city),
       };
     });
-    const [placeDuplicateResponse, existingKeys] = await Promise.all([
+    const [placeDuplicateResponse, shortlistResponse, existingKeys] = await Promise.all([
       supabase.from("leads").select("id, google_place_id").in("google_place_id", places.map((place) => place.id)),
+      supabase.from("lead_candidates").select("google_place_id").in("google_place_id", places.map((place) => place.id)),
       findExistingLeadKeys(
         supabase,
         normalized.map((item) => ({
@@ -131,9 +143,10 @@ export async function searchPlacesAction(
         })),
       ),
     ]);
-    if (placeDuplicateResponse.error) throw new Error("PLACE_DEDUPE_QUERY_FAILED");
+    if (placeDuplicateResponse.error || shortlistResponse.error) throw new Error("PLACE_DEDUPE_QUERY_FAILED");
     const placeDuplicates = placeDuplicateResponse.data;
     const duplicatesByPlace = new Map(placeDuplicates?.map((lead) => [lead.google_place_id, lead.id]) ?? []);
+    const shortlistedPlaceIds = new Set(shortlistResponse.data?.map((candidate) => candidate.google_place_id) ?? []);
 
     const results: DiscoveryResult[] = normalized.map((item) => {
       const keys = [
@@ -175,6 +188,7 @@ export async function searchPlacesAction(
         })),
         score,
         duplicateLeadId,
+        shortlisted: shortlistedPlaceIds.has(item.place.id),
       };
     });
 
@@ -202,4 +216,44 @@ export async function searchPlacesAction(
       : "Google Places non ha completato la ricerca. Controlla configurazione e restrizioni della chiave.";
     return { status: "error", message, results: [], query };
   }
+}
+
+export async function shortlistPlaceAction(
+  _previousState: ShortlistState,
+  formData: FormData,
+): Promise<ShortlistState> {
+  const viewer = await requireViewer();
+  const parsed = shortlistSchema.safeParse({
+    placeId: value(formData, "placeId"),
+    category: value(formData, "category"),
+    location: value(formData, "location"),
+    region: value(formData, "region"),
+  });
+  if (!parsed.success) return { status: "error", message: "Candidato non valido." };
+
+  const supabase = await createClient();
+  const { error } = await supabase.from("lead_candidates").insert({
+    google_place_id: parsed.data.placeId,
+    search_category: parsed.data.category,
+    search_location: parsed.data.location,
+    search_region: parsed.data.region,
+    created_by: viewer.id,
+  });
+  if (error && error.code !== "23505") {
+    return { status: "error", message: "Salvataggio non riuscito." };
+  }
+
+  revalidatePath("/search");
+  return { status: "saved" };
+}
+
+export async function removeCandidateAction(formData: FormData) {
+  await requireViewer();
+  const id = z.uuid().safeParse(value(formData, "candidateId"));
+  if (!id.success) return;
+
+  const supabase = await createClient();
+  const { error } = await supabase.from("lead_candidates").delete().eq("id", id.data);
+  if (error) console.error("Candidate removal failed", { code: error.code });
+  revalidatePath("/search");
 }

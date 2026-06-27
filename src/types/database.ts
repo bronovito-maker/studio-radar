@@ -265,6 +265,30 @@ export type Database = {
         Update: Partial<Database["public"]["Tables"]["lead_imports"]["Insert"]>;
         Relationships: [];
       };
+      lead_candidates: {
+        Row: {
+          id: string;
+          google_place_id: string;
+          search_category: string;
+          search_location: string;
+          search_region: string;
+          created_by: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          google_place_id: string;
+          search_category: string;
+          search_location: string;
+          search_region: string;
+          created_by: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["lead_candidates"]["Insert"]>;
+        Relationships: [];
+      };
       scan_runs: {
         Row: {
           id: string;

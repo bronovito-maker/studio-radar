@@ -46,6 +46,6 @@ Costruire uno strumento interno che aiuti a:
 
 ## Stato
 
-Documentazione, fondazioni tecniche, CRM core, import CSV e score deterministico completati. La discovery Google Places e operativa e verificata con dati reali; il prossimo blocco e il passaggio conforme da risultato a lead.
+Documentazione, fondazioni tecniche, CRM core, import CSV e score deterministico completati. Discovery e shortlist Google Places sono operative; il prossimo blocco e l'arricchimento verificato da fonte indipendente prima della creazione del lead.
 
 Il dettaglio verificabile, i lavori aperti e la prossima milestone sono tracciati nello [stato del progetto](docs/project-status.md).

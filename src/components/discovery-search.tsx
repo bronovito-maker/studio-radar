@@ -9,6 +9,7 @@ import {
   type DiscoverySearchState,
 } from "@/app/search/actions";
 import { DISCOVERY_CATEGORIES } from "@/lib/places/categories";
+import { ShortlistButton } from "@/components/shortlist-button";
 
 const REGIONS = ["Emilia-Romagna", "Toscana", "Lombardia"] as const;
 const INITIAL_STATE: DiscoverySearchState = { status: "idle", results: [] };
@@ -82,11 +83,12 @@ export function DiscoverySearch({ configured }: { configured: boolean }) {
                   <strong>{gradeLabel(result.score.grade)}</strong>
                   <span>{SERVICE_LABELS[result.score.recommendedService]}</span>
                 </div>
+                {!result.duplicateLeadId && state.query ? <ShortlistButton placeId={result.placeId} category={state.query.category} location={state.query.location} region={state.query.region} shortlisted={result.shortlisted} /> : null}
               </article>
             ))}
           </div>
           <footer className="google-disclosure">
-            <strong>Google Maps</strong>
+            <span className="google-maps-attribution" translate="no">Google Maps</span>
             <details><summary>Informazioni sui risultati</summary><p>L’ordine iniziale dipende dalla pertinenza della ricerca, dalla distanza e dalla rilevanza su Google. Studio Radar applica poi il proprio score deterministico.</p></details>
           </footer>
         </section>

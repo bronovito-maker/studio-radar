@@ -13,6 +13,7 @@ La discovery usa Places API (New) per trovare attivita locali. I contenuti resti
 - La ricerca avviene esclusivamente server-side.
 - I risultati completi vengono restituiti alla UI e restano nello stato effimero della sessione.
 - `scan_runs` conserva solo parametri, stato, conteggi e codici errore.
+- `lead_candidates` conserva il Place ID selezionato e il contesto interno digitato dall'utente; i dettagli vengono richiesti nuovamente a Google quando la shortlist viene visualizzata.
 - Non viene salvato uno snapshot dei contenuti Places.
 - La UI mostra Google Maps e le eventuali attribuzioni di terze parti.
 - L'import permanente dei dati del risultato resta escluso finche non viene definita una fonte indipendente o una modalita compatibile con i termini applicabili.

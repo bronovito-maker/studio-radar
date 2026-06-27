@@ -16,7 +16,7 @@ Il CRM e eseguibile e utilizzabile per inserimento manuale o CSV, discovery live
 | 1 - Fondazioni tecniche | Completata | Next.js, TypeScript strict, Supabase, migrazioni, RLS, Auth SSR e layout |
 | 2 - CRM core | Completata | Dashboard reale, lista e dettaglio lead, inserimento, stati, note e audit |
 | 3 - Import e deduplica | Completata | CSV, mapping, preview, deduplica concorrente ed export filtrato |
-| 4 - Discovery e scoring | In corso | Score deterministico e ricerca Places live completati; resta da definire il passaggio conforme da risultato a lead |
+| 4 - Discovery e scoring | In corso | Score, ricerca live e shortlist Place ID completati; resta l'arricchimento da fonte indipendente |
 | 5 - Outreach manuale | Non iniziata | Template WhatsApp, link `wa.me` e timeline |
 | 6 - Cron controllato | Non iniziata | Endpoint protetto, lock e scan runs |
 | 7 - Hardening | Parziale | RLS e controlli base presenti; test E2E, rate limit e logging da completare |
@@ -47,6 +47,8 @@ Il CRM e eseguibile e utilizzabile per inserimento manuale o CSV, discovery live
 - Risultati Places effimeri con attribuzioni; nel database restano solo metadati e conteggi della scansione.
 - Discovery confrontata con i lead esistenti prima di mostrare i risultati.
 - Collaudo live completato il 28 giugno 2026: 8 hotel e agriturismi trovati a Riccione, 0 duplicati, scansione `succeeded` e nessun errore.
+- Shortlist condivisa protetta da RLS: salva solo Place ID e contesto interno, con dettagli ricaricati live e rimozione controllata.
+- Place Details verificato con una chiamata reale e field mask limitata ai dati necessari alla shortlist.
 
 ## Auth ancora da chiudere
 
@@ -64,7 +66,7 @@ Un admin carica un CSV, associa le colonne, vede righe valide e duplicati, confe
 
 ## Prossima milestone dimostrabile
 
-Un admin seleziona un risultato interessante e lo trasforma in lead tramite un flusso conforme, mantenendo provenienza, consenso operativo e audit. I contenuti Places non vengono copiati automaticamente nel CRM.
+Un admin seleziona un candidato in shortlist, avvia l'arricchimento dal sito ufficiale e conferma i dati persistenti prima della creazione del lead. I contenuti Places non vengono copiati automaticamente nel CRM.
 
 ## Blocchi esterni non urgenti
 
