@@ -106,8 +106,12 @@ export type Database = {
           source: Database["public"]["Enums"]["lead_source"];
           google_place_id: string | null;
           phone: string | null;
+          phone_normalized: string | null;
           email: string | null;
+          email_normalized: string | null;
           website_url: string | null;
+          website_normalized: string | null;
+          business_city_normalized: string | null;
           address: string | null;
           category: string | null;
           rating: number | null;
@@ -134,8 +138,12 @@ export type Database = {
           source?: Database["public"]["Enums"]["lead_source"];
           google_place_id?: string | null;
           phone?: string | null;
+          phone_normalized?: string | null;
           email?: string | null;
+          email_normalized?: string | null;
           website_url?: string | null;
+          website_normalized?: string | null;
+          business_city_normalized?: string | null;
           address?: string | null;
           category?: string | null;
           rating?: number | null;
@@ -217,6 +225,46 @@ export type Database = {
         Update: Partial<Database["public"]["Tables"]["lead_events"]["Insert"]>;
         Relationships: [];
       };
+      lead_imports: {
+        Row: {
+          id: string;
+          filename: string;
+          status: Database["public"]["Enums"]["lead_import_status"];
+          headers: string[];
+          raw_rows: Json;
+          mapping: Json;
+          preview_rows: Json;
+          total_count: number;
+          valid_count: number;
+          duplicate_count: number;
+          invalid_count: number;
+          imported_count: number;
+          created_by: string;
+          created_at: string;
+          updated_at: string;
+          completed_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          filename: string;
+          status?: Database["public"]["Enums"]["lead_import_status"];
+          headers: string[];
+          raw_rows?: Json;
+          mapping?: Json;
+          preview_rows?: Json;
+          total_count?: number;
+          valid_count?: number;
+          duplicate_count?: number;
+          invalid_count?: number;
+          imported_count?: number;
+          created_by: string;
+          created_at?: string;
+          updated_at?: string;
+          completed_at?: string | null;
+        };
+        Update: Partial<Database["public"]["Tables"]["lead_imports"]["Insert"]>;
+        Relationships: [];
+      };
       scan_runs: {
         Row: {
           id: string;
@@ -280,9 +328,14 @@ export type Database = {
         Args: Record<PropertyKey, never>;
         Returns: Json;
       };
+      confirm_lead_import: {
+        Args: { p_import_id: string };
+        Returns: Json;
+      };
     };
     Enums: {
       lead_source: "manual" | "csv" | "google_places";
+      lead_import_status: "uploaded" | "previewed" | "completed" | "failed";
       lead_status:
         | "new"
         | "qualified"

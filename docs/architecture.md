@@ -56,9 +56,11 @@ Le UI non chiamano direttamente servizi esterni sensibili. Le chiavi Google, AI 
 
 Dashboard e CRM core usano Server Components, Server Actions e funzioni PostgreSQL transazionali tramite il client Supabase autenticato. Le mutazioni che richiedono audit sono atomiche e rispettano RLS.
 
+L'import CSV viene analizzato e normalizzato server side. Il batch conserva mapping e anteprima; la conferma ricontrolla i duplicati e crea lead e audit nella stessa transazione.
+
 ## API interne previste per le integrazioni
 
-- `POST /api/leads/import`
+- `GET /api/leads/export`
 - `POST /api/search`
 - `POST /api/outreach/mark-sent`
 - `GET /api/settings`

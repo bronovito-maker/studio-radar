@@ -46,6 +46,6 @@ Costruire uno strumento interno che aiuti a:
 
 ## Stato
 
-Documentazione, fondazioni tecniche e CRM core completati. Prossima fase: import e deduplica.
+Documentazione, fondazioni tecniche, CRM core e import CSV completati. Prossima fase: discovery Google Places.
 
 Il dettaglio verificabile, i lavori aperti e la prossima milestone sono tracciati nello [stato del progetto](docs/project-status.md).

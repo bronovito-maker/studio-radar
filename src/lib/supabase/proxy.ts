@@ -38,6 +38,10 @@ export async function updateSession(request: NextRequest) {
     request.nextUrl.pathname.startsWith("/auth");
 
   if (!data?.claims && !isPublicRoute) {
+    if (request.nextUrl.pathname.startsWith("/api/")) {
+      return NextResponse.json({ error: "Non autenticato" }, { status: 401 });
+    }
+
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     return NextResponse.redirect(url);
@@ -51,4 +55,3 @@ export async function updateSession(request: NextRequest) {
 
   return response;
 }
-

@@ -1,4 +1,4 @@
-import { ChevronRight, Filter, Plus, Search, X } from "lucide-react";
+import { ChevronRight, Download, Filter, Plus, Search, X } from "lucide-react";
 import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
 import { requireViewer } from "@/lib/auth";
@@ -73,6 +73,10 @@ export default async function LeadsPage({ searchParams }: LeadListPageProps) {
     ? encodeCursor({ createdAt: lastLead.created_at, id: lastLead.id })
     : null;
   const activeFilters = Boolean(q || status || region);
+  const exportParams = new URLSearchParams();
+  if (q) exportParams.set("q", q);
+  if (status) exportParams.set("status", status);
+  if (region) exportParams.set("region", region);
   const nextParams = new URLSearchParams();
   if (q) nextParams.set("q", q);
   if (status) nextParams.set("status", status);
@@ -86,9 +90,14 @@ export default async function LeadsPage({ searchParams }: LeadListPageProps) {
       title="Lead"
       viewer={viewer}
       actions={
-        <Link className="primary-button" href="/leads/new">
-          <Plus size={18} aria-hidden="true" /> Nuovo lead
-        </Link>
+        <>
+          <Link className="secondary-button" href={`/api/leads/export?${exportParams.toString()}`}>
+            <Download size={17} aria-hidden="true" /> Esporta
+          </Link>
+          <Link className="primary-button" href="/leads/new">
+            <Plus size={18} aria-hidden="true" /> Nuovo lead
+          </Link>
+        </>
       }
     >
       <section className="filter-bar" aria-label="Filtri lead">

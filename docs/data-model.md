@@ -101,6 +101,30 @@ Timeline commerciale.
 | started_at | timestamptz | |
 | finished_at | timestamptz | |
 
+### `lead_imports`
+
+Batch temporaneo e tracciato per il workflow CSV.
+
+| Campo | Tipo | Note |
+|---|---|---|
+| id | uuid | PK |
+| filename | text | Nome file originale sanitizzato |
+| status | lead_import_status | `uploaded`, `previewed`, `completed`, `failed` |
+| headers | text[] | Intestazioni rilevate |
+| raw_rows | jsonb | Massimo 500 righe |
+| mapping | jsonb | Associazione colonne-campi |
+| preview_rows | jsonb | Dati normalizzati con esito per riga |
+| valid_count | int | Righe pronte |
+| duplicate_count | int | Righe duplicate |
+| invalid_count | int | Righe non valide |
+| imported_count | int | Lead creati |
+| created_by | uuid | FK `profiles.id` |
+| completed_at | timestamptz | |
+
+### Chiavi deduplica lead
+
+`leads` mantiene chiavi normalizzate indicizzate per email, telefono, dominio web e combinazione nome+citta. Un trigger le aggiorna a ogni modifica dei dati sorgente.
+
 ### `settings`
 
 Singola riga applicativa.
