@@ -32,6 +32,7 @@ Costruire uno strumento interno che aiuti a:
 - [Standard tecnici](docs/technical-standards.md)
 - [Variabili ambiente](docs/env-vars.md)
 - [Setup Supabase](docs/supabase-setup.md)
+- [Stato del progetto](docs/project-status.md)
 - [Domande aperte](docs/open-questions.md)
 - [Decisioni architetturali](docs/adr)
 
@@ -45,4 +46,6 @@ Costruire uno strumento interno che aiuti a:
 
 ## Stato
 
-Fase attuale: scaffold applicazione e sviluppo MVP.
+Documentazione e fondazioni tecniche completate. Prossima fase: CRM core.
+
+Il dettaglio verificabile, i lavori aperti e la prossima milestone sono tracciati nello [stato del progetto](docs/project-status.md).
