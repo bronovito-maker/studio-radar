@@ -127,10 +127,8 @@ Singola riga applicativa.
 - `contacted`
 - `follow_up`
 - `booked`
-- `replied`
 - `client`
 - `discarded`
-- `no_response`
 
 ### `user_role`
 
@@ -153,4 +151,3 @@ Singola riga applicativa.
 - `lead_scores(lead_id, created_at desc)`
 - `lead_events(lead_id, created_at desc)`
 - `scan_runs(started_at desc)`
-

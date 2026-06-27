@@ -46,6 +46,6 @@ Costruire uno strumento interno che aiuti a:
 
 ## Stato
 
-Documentazione e fondazioni tecniche completate. Prossima fase: CRM core.
+Documentazione, fondazioni tecniche e CRM core completati. Prossima fase: import e deduplica.
 
 Il dettaglio verificabile, i lavori aperti e la prossima milestone sono tracciati nello [stato del progetto](docs/project-status.md).

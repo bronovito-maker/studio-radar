@@ -251,7 +251,36 @@ export type Database = {
       };
     };
     Views: Record<string, never>;
-    Functions: Record<string, never>;
+    Functions: {
+      create_manual_lead: {
+        Args: {
+          p_business_name: string;
+          p_city?: string | null;
+          p_region?: string | null;
+          p_category?: string | null;
+          p_phone?: string | null;
+          p_email?: string | null;
+          p_website_url?: string | null;
+          p_estimated_value?: number;
+        };
+        Returns: string;
+      };
+      update_lead_status: {
+        Args: {
+          p_lead_id: string;
+          p_status: Database["public"]["Enums"]["lead_status"];
+        };
+        Returns: undefined;
+      };
+      update_lead_notes: {
+        Args: { p_lead_id: string; p_notes: string };
+        Returns: undefined;
+      };
+      get_dashboard_summary: {
+        Args: Record<PropertyKey, never>;
+        Returns: Json;
+      };
+    };
     Enums: {
       lead_source: "manual" | "csv" | "google_places";
       lead_status:
@@ -270,4 +299,3 @@ export type Database = {
     CompositeTypes: Record<string, never>;
   };
 };
-

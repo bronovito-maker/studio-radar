@@ -7,7 +7,7 @@
 - Backend: Next.js Route Handlers e Server Actions dove appropriate.
 - Database: Supabase PostgreSQL.
 - Auth: Supabase Auth.
-- AI: provider astratto, prima implementazione Anthropic o OpenAI da scegliere in sviluppo.
+- AI: provider astratto, prima implementazione Gemini o OpenAI da scegliere in sviluppo.
 - Maps: Google Places API.
 - Cron: Vercel Cron o scheduler equivalente.
 - Test: Vitest per logica, Playwright per flussi principali.
@@ -52,11 +52,12 @@ Utente o cron
 
 Le UI non chiamano direttamente servizi esterni sensibili. Le chiavi Google, AI e service role Supabase restano solo lato server.
 
-## API interne previste
+## Accesso dati implementato
 
-- `GET /api/stats`
-- `GET /api/leads`
-- `PATCH /api/leads/:id`
+Dashboard e CRM core usano Server Components, Server Actions e funzioni PostgreSQL transazionali tramite il client Supabase autenticato. Le mutazioni che richiedono audit sono atomiche e rispettano RLS.
+
+## API interne previste per le integrazioni
+
 - `POST /api/leads/import`
 - `POST /api/search`
 - `POST /api/outreach/mark-sent`
@@ -82,8 +83,7 @@ Regole:
 
 Fin dall'MVP servono:
 
-- tabella `audit_events`;
+- tabella `lead_events`;
 - tabella `scan_runs`;
 - logging server side sugli errori;
 - messaggi utente chiari senza esporre dettagli interni.
-

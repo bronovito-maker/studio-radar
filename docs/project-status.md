@@ -4,9 +4,9 @@ Ultimo aggiornamento: 27 giugno 2026.
 
 ## Sintesi
 
-Studio Radar ha completato la documentazione di prodotto e le fondazioni tecniche. Il prossimo blocco di lavoro e il CRM core: dati reali in dashboard, lista lead, dettaglio, cambio stato, note e audit.
+Studio Radar ha completato la documentazione, le fondazioni tecniche e il CRM core. Il prossimo blocco di lavoro e import e deduplica: upload CSV, mappatura, anteprima, conferma ed export.
 
-La base e eseguibile e protetta, ma non e ancora un MVP operativo: discovery, scoring, import e outreach devono ancora essere implementati.
+Il CRM e eseguibile e utilizzabile per inserimento e gestione manuale dei lead, ma il flusso MVP completo richiede ancora import, discovery, scoring e outreach.
 
 ## Avanzamento roadmap
 
@@ -14,8 +14,8 @@ La base e eseguibile e protetta, ma non e ancora un MVP operativo: discovery, sc
 |---|---|---|
 | 0 - Documentazione | Completata | Scope, architettura, dati, sicurezza, UX, targeting e ADR tracciati |
 | 1 - Fondazioni tecniche | Completata | Next.js, TypeScript strict, Supabase, migrazioni, RLS, Auth SSR e layout |
-| 2 - CRM core | Prossima | Dashboard reale, lista e dettaglio lead, stati, note e audit |
-| 3 - Import e deduplica | Non iniziata | CSV, preview, deduplica ed export |
+| 2 - CRM core | Completata | Dashboard reale, lista e dettaglio lead, inserimento, stati, note e audit |
+| 3 - Import e deduplica | Prossima | CSV, preview, deduplica ed export |
 | 4 - Discovery e scoring | Non iniziata | Google Places, score deterministico e provider AI |
 | 5 - Outreach manuale | Non iniziata | Template WhatsApp, link `wa.me` e timeline |
 | 6 - Cron controllato | Non iniziata | Endpoint protetto, lock e scan runs |
@@ -31,17 +31,26 @@ La base e eseguibile e protetta, ma non e ancora un MVP operativo: discovery, sc
 - RLS attiva sulle tabelle pubbliche; accesso anonimo ai lead negato.
 - Ruolo del profilo non modificabile dagli utenti autenticati tramite Data API.
 - Security Advisor senza errori di schema; resta da attivare Leaked Password Protection in Supabase Auth prima della produzione.
+- Profilo e ruolo applicativo recuperati server side e mostrati nel layout autenticato.
+- Dashboard alimentata da metriche PostgreSQL reali.
+- Lista lead con ricerca, filtri e paginazione a cursore.
+- Creazione manuale, dettaglio, note e cambio stato implementati.
+- Mutazioni CRM e relativi audit eseguiti in transazioni PostgreSQL atomiche.
+- Test transazionale autenticato superato con rollback e nessun dato sintetico persistito.
 
 ## Auth ancora da chiudere
 
-- Recuperare il profilo applicativo nel layout, oltre ai claim Auth.
 - Applicare guardie UI/server alle funzioni riservate agli admin.
 - Verificare il caso `collaborator` con un secondo account di test.
 - Aggiungere test automatici del flusso login e dei permessi.
 
-## Prossima milestone dimostrabile
+## Milestone CRM core consegnata
 
 Un admin accede, vede metriche calcolate dal database, apre una lista lead paginata, filtra i risultati, entra nel dettaglio e cambia stato con creazione automatica dell'evento di audit.
+
+## Prossima milestone dimostrabile
+
+Un admin carica un CSV, associa le colonne, vede righe valide e duplicati, conferma l'import e scarica un export filtrato dei lead.
 
 ## Blocchi esterni non urgenti
 
