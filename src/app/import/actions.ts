@@ -6,12 +6,12 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { requireViewer } from "@/lib/auth";
 import {
-  dedupeKeys,
   IMPORT_FIELDS,
   type ImportMapping,
   normalizeImportRow,
   type RawImportRow,
 } from "@/lib/lead-import";
+import { dedupeKeys, findExistingLeadKeys } from "@/lib/leads/deduplication";
 import { createClient } from "@/lib/supabase/server";
 import type { Json } from "@/types/database";
 
@@ -34,14 +34,6 @@ function withMessage(path: string, type: "error" | "success", message: string) {
 function formValue(formData: FormData, key: string) {
   const value = formData.get(key);
   return typeof value === "string" ? value : "";
-}
-
-function chunk<T>(items: T[], size: number) {
-  const chunks: T[][] = [];
-  for (let index = 0; index < items.length; index += size) {
-    chunks.push(items.slice(index, index + size));
-  }
-  return chunks;
 }
 
 export async function uploadCsv(formData: FormData) {
@@ -161,28 +153,15 @@ export async function previewImport(formData: FormData) {
   }
 
   const validRows = previewRows.filter((row) => row.state === "valid");
-  const queries = [
-    ...chunk([...new Set(validRows.flatMap((row) => row.emailNormalized ? [row.emailNormalized] : []))], 100)
-      .map((values) => supabase.from("leads").select("id, email_normalized, phone_normalized, website_normalized, business_city_normalized").in("email_normalized", values)),
-    ...chunk([...new Set(validRows.flatMap((row) => row.phoneNormalized ? [row.phoneNormalized] : []))], 100)
-      .map((values) => supabase.from("leads").select("id, email_normalized, phone_normalized, website_normalized, business_city_normalized").in("phone_normalized", values)),
-    ...chunk([...new Set(validRows.flatMap((row) => row.websiteNormalized ? [row.websiteNormalized] : []))], 100)
-      .map((values) => supabase.from("leads").select("id, email_normalized, phone_normalized, website_normalized, business_city_normalized").in("website_normalized", values)),
-    ...chunk([...new Set(validRows.map((row) => row.businessCityNormalized))], 100)
-      .map((values) => supabase.from("leads").select("id, email_normalized, phone_normalized, website_normalized, business_city_normalized").in("business_city_normalized", values)),
-  ];
-  const results = await Promise.all(queries);
-  if (results.some((result) => result.error)) {
+  let existingKeys: Map<string, string>;
+  try {
+    existingKeys = await findExistingLeadKeys(
+      supabase,
+      validRows,
+    );
+  } catch {
     redirect(withMessage(`/import/${importId.data}`, "error", "Controllo duplicati non riuscito. Riprova."));
   }
-
-  const existingKeys = new Map<string, string>();
-  results.flatMap((result) => result.data ?? []).forEach((lead) => {
-    if (lead.email_normalized) existingKeys.set(`email:${lead.email_normalized}`, lead.id);
-    if (lead.phone_normalized) existingKeys.set(`phone:${lead.phone_normalized}`, lead.id);
-    if (lead.website_normalized) existingKeys.set(`website:${lead.website_normalized}`, lead.id);
-    if (lead.business_city_normalized) existingKeys.set(`business:${lead.business_city_normalized}`, lead.id);
-  });
 
   for (const row of previewRows) {
     if (row.state !== "valid") continue;

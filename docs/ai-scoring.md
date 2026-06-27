@@ -8,20 +8,27 @@ Lo scoring non deve essere opaco: ogni valutazione deve essere tracciabile e ric
 
 ## Strategia
 
-### 1. Score deterministico
+### 1. Score deterministico - implementato
 
-Calcolato senza AI, economico e ripetibile.
+Versione corrente: `deterministic-v2026.06.27-1`.
 
-Esempi di segnali:
+E calcolato senza AI, quindi e economico, spiegabile e perfettamente ripetibile. Ogni esecuzione viene salvata nello storico `lead_scores`; il record precedente non viene sovrascritto.
 
-- sito assente: opportunita sito nuovo;
-- sito presente: opportunita restyling o automazioni;
-- numero recensioni alto: business attivo;
-- rating buono: business sano;
-- categoria ad alto valore: priorita maggiore;
-- area geografica target: priorita maggiore;
-- telefono disponibile: contattabilita;
-- booking assente/presente: opportunita automazione o conversione.
+Pesi correnti:
+
+- base attivita: `+15`;
+- categoria ad alto valore: `+16`; categoria media: `+10`; categoria assente: `-5`;
+- Emilia-Romagna: `+12`; Toscana: `+8`; Lombardia: `+3`;
+- sito assente: `+18`; sito presente: `+4`;
+- rating almeno 4,2 con almeno 30 recensioni: `+16`;
+- rating almeno 4 con almeno 10 recensioni: `+10`;
+- almeno 5 recensioni: `+4`; nessuna recensione: `-6`;
+- rating inferiore a 3,5: `-10`;
+- telefono presente: `+6`; assente: `-5`; email presente: `+3`;
+- booking assente in una categoria prenotabile: `+7`;
+- attivita temporaneamente chiusa: `-20`; definitivamente chiusa: score `0`.
+
+Il risultato e sempre limitato tra 0 e 100. A parita di input, output e motivazione restano identici.
 
 ### 2. Score AI
 
@@ -32,9 +39,9 @@ Usato per:
 - ridurre falsi positivi;
 - evidenziare segnali non banali nei dati disponibili.
 
-## Provider
+## Provider AI
 
-Decisione aperta tra Gemini e OpenAI.
+Decisione aperta tra Gemini e OpenAI. Non blocca l'MVP: l'AI sara un secondo livello di analisi, mai la fonte primaria dello score.
 
 Nel codice il provider deve restare astratto, cosi da poter cambiare modello senza riscrivere lo scoring.
 
@@ -44,7 +51,7 @@ Nel codice il provider deve restare astratto, cosi da poter cambiare modello sen
 {
   "score": 72,
   "grade": "hot",
-  "recommended_service": "restyling",
+  "recommended_service": "restyling-sito",
   "reasoning": "Attivita con molte recensioni, sito presente ma migliorabile e mercato locale adatto.",
   "positive_signals": ["review_count_high", "target_area"],
   "negative_signals": ["website_present"],
@@ -59,7 +66,7 @@ Nel codice il provider deve restare astratto, cosi da poter cambiare modello sen
 - 60-79: buono, da contattare.
 - 80-100: prioritario.
 
-La soglia di import/qualifica iniziale e 50, configurabile.
+La soglia di qualifica iniziale e 50, configurabile in `settings.default_score_threshold`. Un lead nello stato `new` che supera la soglia passa a `qualified`; gli altri stati non vengono modificati automaticamente.
 
 La strategia commerciale e "pochi lead ma buoni": lo scoring deve privilegiare precisione e qualita rispetto alla quantita.
 
@@ -71,16 +78,16 @@ La strategia commerciale e "pochi lead ma buoni": lo scoring deve privilegiare p
 - Non usare AI per inventare dati mancanti.
 - Non contattare automaticamente in base allo score.
 
-## Versionamento prompt
+## Versionamento
 
 Formato:
 
 ```text
-lead-scoring-vYYYY.MM.DD-N
+deterministic-vYYYY.MM.DD-N
 ```
 
 Esempio:
 
 ```text
-lead-scoring-v2026.06.26-1
+deterministic-v2026.06.27-1
 ```

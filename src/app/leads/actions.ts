@@ -4,7 +4,9 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { isLeadStatus } from "@/lib/crm";
+import { scoreLead } from "@/lib/scoring/deterministic";
 import { createClient } from "@/lib/supabase/server";
+import type { Json } from "@/types/database";
 
 const optionalText = z.string().trim().max(300).transform((value) => value || null);
 
@@ -111,4 +113,55 @@ export async function updateLeadNotes(formData: FormData) {
 
   revalidatePath(`/leads/${idResult.data}`);
   redirect(withMessage(`/leads/${idResult.data}`, "success", "Nota salvata"));
+}
+
+export async function scoreLeadDeterministically(formData: FormData) {
+  const idResult = z.uuid().safeParse(value(formData, "leadId"));
+  if (!idResult.success) redirect(withMessage("/leads", "error", "Lead non valido"));
+
+  const supabase = await createClient();
+  const { data: lead, error: leadError } = await supabase
+    .from("leads")
+    .select("id, business_name, region, category, phone, email, website_url, rating, review_count, has_booking")
+    .eq("id", idResult.data)
+    .single();
+
+  if (leadError || !lead) {
+    redirect(withMessage(`/leads/${idResult.data}`, "error", "Dati lead non disponibili"));
+  }
+
+  const input = {
+    businessName: lead.business_name,
+    region: lead.region,
+    category: lead.category,
+    phone: lead.phone,
+    email: lead.email,
+    websiteUrl: lead.website_url,
+    rating: lead.rating,
+    reviewCount: lead.review_count,
+    hasBooking: lead.has_booking,
+    businessStatus: null,
+  };
+  const result = scoreLead(input);
+  const { error } = await supabase.rpc("save_deterministic_score", {
+    p_lead_id: lead.id,
+    p_score: result.score,
+    p_grade: result.grade,
+    p_reasoning: result.reasoning,
+    p_positive_signals: result.positiveSignals,
+    p_negative_signals: result.negativeSignals,
+    p_confidence: result.confidence,
+    p_version: result.version,
+    p_input_snapshot: input as unknown as Json,
+    p_recommended_service_slug: result.recommendedService,
+  });
+
+  if (error) {
+    redirect(withMessage(`/leads/${lead.id}`, "error", "Score non salvato. Riprova."));
+  }
+
+  revalidatePath("/");
+  revalidatePath("/leads");
+  revalidatePath(`/leads/${lead.id}`);
+  redirect(withMessage(`/leads/${lead.id}`, "success", `Score aggiornato: ${result.score}/100`));
 }

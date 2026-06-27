@@ -1,0 +1,15 @@
+export const DISCOVERY_CATEGORIES = [
+  "Hotel e agriturismi",
+  "B&B",
+  "Centri estetici e spa",
+  "Studi dentistici",
+  "Fisioterapisti e poliambulatori",
+  "Ristoranti e trattorie indipendenti",
+  "Palestre e centri fitness",
+  "Wedding planner e location eventi",
+  "Agenzie immobiliari indipendenti",
+  "Veterinari e cliniche veterinarie",
+  "Saloni parrucchieri premium",
+  "Interior designer e showroom",
+  "Autosaloni e concessionarie locali",
+] as const;

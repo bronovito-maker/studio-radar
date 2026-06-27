@@ -1,4 +1,12 @@
 import { z } from "zod";
+import { dedupeKeys } from "@/lib/leads/deduplication";
+import {
+  compactText,
+  normalizeBusinessCityKey,
+  normalizeEmailKey,
+  normalizePhoneKey,
+  normalizeWebsite,
+} from "@/lib/leads/normalization";
 
 export const IMPORT_FIELDS = [
   { key: "businessName", label: "Nome attività", required: true },
@@ -35,33 +43,6 @@ export type ImportPreviewRow = {
   businessCityNormalized: string;
 };
 
-function compact(value: string) {
-  return value.trim().replace(/\s+/g, " ");
-}
-
-function normalizeEmail(value: string) {
-  const email = compact(value).toLowerCase();
-  return email || null;
-}
-
-function normalizePhone(value: string) {
-  const phone = value.replace(/[^0-9]+/g, "");
-  return phone.length >= 7 ? phone : null;
-}
-
-function normalizeWebsite(value: string) {
-  const candidate = compact(value);
-  if (!candidate) return { display: "", key: null, valid: true };
-
-  const withProtocol = /^https?:\/\//i.test(candidate) ? candidate : `https://${candidate}`;
-  const parsed = z.url().safeParse(withProtocol);
-  if (!parsed.success) return { display: candidate, key: null, valid: false };
-
-  const url = new URL(parsed.data);
-  const hostname = url.hostname.toLowerCase().replace(/^www\./, "");
-  return { display: withProtocol, key: hostname || null, valid: Boolean(hostname) };
-}
-
 function parseEstimatedValue(value: string) {
   const compactValue = value.replace(/[€\s]/g, "");
   if (!compactValue) return { value: 0, valid: true };
@@ -77,7 +58,7 @@ function parseEstimatedValue(value: string) {
 }
 
 export function normalizeImportRow(raw: RawImportRow, mapping: ImportMapping): ImportPreviewRow {
-  const get = (field: ImportField) => compact(raw.values[mapping[field]] ?? "");
+  const get = (field: ImportField) => compactText(raw.values[mapping[field]] ?? "");
   const businessName = get("businessName");
   const city = get("city");
   const region = get("region");
@@ -111,18 +92,11 @@ export function normalizeImportRow(raw: RawImportRow, mapping: ImportMapping): I
     email,
     websiteUrl: website.display,
     estimatedValue: estimated.valid ? estimated.value : 0,
-    emailNormalized: normalizeEmail(email),
-    phoneNormalized: normalizePhone(phone),
+    emailNormalized: normalizeEmailKey(email),
+    phoneNormalized: normalizePhoneKey(phone),
     websiteNormalized: website.key,
-    businessCityNormalized: `${compact(businessName).toLowerCase()}|${compact(city).toLowerCase()}`,
+    businessCityNormalized: normalizeBusinessCityKey(businessName, city),
   };
 }
 
-export function dedupeKeys(row: ImportPreviewRow) {
-  return [
-    row.emailNormalized ? `email:${row.emailNormalized}` : null,
-    row.phoneNormalized ? `phone:${row.phoneNormalized}` : null,
-    row.websiteNormalized ? `website:${row.websiteNormalized}` : null,
-    `business:${row.businessCityNormalized}`,
-  ].filter((key): key is string => Boolean(key));
-}
+export { dedupeKeys };

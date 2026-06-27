@@ -25,7 +25,7 @@ type AppShellProps = {
 const navigation = [
   { id: "dashboard", label: "Dashboard", href: "/", icon: Gauge, enabled: true },
   { id: "leads", label: "Lead", href: "/leads", icon: ContactRound, enabled: true },
-  { id: "search", label: "Ricerca", href: "/search", icon: Search, enabled: false },
+  { id: "search", label: "Ricerca", href: "/search", icon: Search, enabled: true },
   { id: "import", label: "Importa", href: "/import", icon: Upload, enabled: true },
   { id: "outreach", label: "Outreach", href: "/outreach", icon: CalendarCheck, enabled: false },
   { id: "settings", label: "Impostazioni", href: "/settings", icon: Settings, enabled: false },

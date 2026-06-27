@@ -2,18 +2,32 @@
 
 ## Google Places
 
-### Uso MVP
+### Uso MVP implementato
 
-- Ricerca attivita per categoria + area.
-- Recupero campi minimi: nome, indirizzo, telefono se disponibile, sito, rating, numero recensioni, place id, categoria.
-- Deduplica su `google_place_id`.
+- Text Search (New) server-side per categoria, citta/zona e regione.
+- Recupero con field mask dei soli campi necessari: nome, indirizzo, telefono, sito, rating, recensioni, categoria, stato, booking, Place ID e URL Maps.
+- Score deterministico immediato sui risultati.
+- Deduplica in lettura su `google_place_id`, telefono, dominio e nome+citta.
+- Cronologia tecnica in `scan_runs`: query, stato, conteggi, duplicati ed eventuale codice errore.
 
 ### Regole
 
-- Richiedere solo i campi necessari.
-- Salvare snapshot dei dati usati per scoring.
+- La chiave `GOOGLE_PLACES_API_KEY` resta esclusivamente sul server.
+- Richiedere solo i campi necessari tramite `X-Goog-FieldMask`.
 - Gestire quota, errori e retry.
 - Non fare scraping HTML di Google.
+- Mostrare attribuzione Google Maps e attribuzioni di terze parti insieme ai risultati.
+- Non persistere i contenuti Places restituiti dalla ricerca. I risultati sono effimeri; il Place ID puo essere conservato a tempo indeterminato.
+- Prima dell'import permanente, definire quali dati possono essere acquisiti da una fonte indipendente o con un trattamento compatibile con i termini applicabili.
+
+### Attivazione locale
+
+1. Abilitare Places API (New) nel progetto Google Cloud.
+2. Creare una API key limitata alla sola Places API (New).
+3. Inserire `GOOGLE_PLACES_API_KEY` in `.env.local`.
+4. Riavviare il server e verificare una ricerca da 5 risultati.
+
+In produzione applicare anche una restrizione adatta al backend e monitorare quota e costi.
 
 ## Provider AI
 

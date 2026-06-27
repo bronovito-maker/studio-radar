@@ -67,6 +67,17 @@ export default async function LeadsPage({ searchParams }: LeadListPageProps) {
 
   const { data, count, error } = await query.limit(21);
   const leads = data?.slice(0, 20) ?? [];
+  const { data: scoreRows } = leads.length
+    ? await supabase
+        .from("lead_scores")
+        .select("lead_id, score, grade, created_at")
+        .in("lead_id", leads.map((lead) => lead.id))
+        .order("created_at", { ascending: false })
+    : { data: [] };
+  const scoresByLead = new Map<string, { score: number; grade: string }>();
+  scoreRows?.forEach((score) => {
+    if (!scoresByLead.has(score.lead_id)) scoresByLead.set(score.lead_id, score);
+  });
   const hasNext = (data?.length ?? 0) > 20;
   const lastLead = leads.at(-1);
   const nextCursor = lastLead
@@ -134,13 +145,14 @@ export default async function LeadsPage({ searchParams }: LeadListPageProps) {
           <div className="table-scroll">
             <table className="data-table">
               <thead>
-                <tr><th>Attività</th><th>Categoria</th><th>Stato</th><th>Origine</th><th>Valore</th><th>Inserito</th><th><span className="sr-only">Apri</span></th></tr>
+                <tr><th>Attività</th><th>Categoria</th><th>Score</th><th>Stato</th><th>Origine</th><th>Valore</th><th>Inserito</th><th><span className="sr-only">Apri</span></th></tr>
               </thead>
               <tbody>
                 {leads.map((lead) => (
                   <tr key={lead.id}>
                     <td><Link className="entity-link" href={`/leads/${lead.id}`}><strong>{lead.business_name}</strong><span>{[lead.city, lead.region].filter(Boolean).join(", ") || "Località non indicata"}</span></Link></td>
                     <td>{lead.category || "Non indicata"}</td>
+                    <td>{scoresByLead.get(lead.id) ? <span className={`score-pill score-pill-${scoresByLead.get(lead.id)?.grade}`}>{scoresByLead.get(lead.id)?.score}</span> : <span className="score-empty">—</span>}</td>
                     <td><span className={`status-badge status-${lead.status}`}>{STATUS_LABELS[lead.status]}</span></td>
                     <td>{SOURCE_LABELS[lead.source]}</td>
                     <td className="numeric">{formatCurrency(lead.estimated_value)}</td>

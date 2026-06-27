@@ -332,6 +332,21 @@ export type Database = {
         Args: { p_import_id: string };
         Returns: Json;
       };
+      save_deterministic_score: {
+        Args: {
+          p_lead_id: string;
+          p_score: number;
+          p_grade: Database["public"]["Enums"]["score_grade"];
+          p_reasoning: string;
+          p_positive_signals: string[];
+          p_negative_signals: string[];
+          p_confidence: number;
+          p_version: string;
+          p_input_snapshot: Json;
+          p_recommended_service_slug: string;
+        };
+        Returns: string;
+      };
     };
     Enums: {
       lead_source: "manual" | "csv" | "google_places";

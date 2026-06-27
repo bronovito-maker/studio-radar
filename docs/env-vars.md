@@ -27,7 +27,7 @@ Questo file descrive le variabili previste. I valori reali non vanno committati.
 
 | Nome | Obbligatoria | Note |
 |---|---|---|
-| `GOOGLE_PLACES_API_KEY` | si per discovery | Solo server |
+| `GOOGLE_PLACES_API_KEY` | si per discovery live | Solo server; mai prefisso `NEXT_PUBLIC_` |
 
 ## AI Provider
 
@@ -35,7 +35,7 @@ Una sola delle seguenti famiglie sara richiesta in base alla scelta provider.
 
 | Nome | Obbligatoria | Note |
 |---|---|---|
-| `ANTHROPIC_API_KEY` | se Anthropic | Solo server |
+| `GEMINI_API_KEY` | se Gemini | Solo server |
 | `OPENAI_API_KEY` | se OpenAI | Solo server |
 | `AI_SCORING_MODEL` | si per scoring AI | Nome modello configurabile |
 

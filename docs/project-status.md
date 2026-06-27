@@ -4,9 +4,9 @@ Ultimo aggiornamento: 27 giugno 2026.
 
 ## Sintesi
 
-Studio Radar ha completato la documentazione, le fondazioni tecniche, il CRM core e l'import CSV. Il prossimo blocco di lavoro e la discovery: ricerca Google Places, normalizzazione, selezione e import dei risultati.
+Studio Radar ha completato documentazione, fondazioni tecniche, CRM core, import CSV e score deterministico. La base Google Places e pronta: ricerca live, normalizzazione, score e controllo duplicati sono implementati; manca la chiave API per la verifica con dati reali.
 
-Il CRM e eseguibile e utilizzabile per inserimento manuale o CSV, gestione ed export dei lead. Il flusso MVP completo richiede ancora discovery, scoring e outreach.
+Il CRM e eseguibile e utilizzabile per inserimento manuale o CSV, gestione, scoring ed export dei lead. Il flusso MVP completo richiede ancora verifica live della discovery, decisione sull'acquisizione conforme dei risultati e outreach.
 
 ## Avanzamento roadmap
 
@@ -16,7 +16,7 @@ Il CRM e eseguibile e utilizzabile per inserimento manuale o CSV, gestione ed ex
 | 1 - Fondazioni tecniche | Completata | Next.js, TypeScript strict, Supabase, migrazioni, RLS, Auth SSR e layout |
 | 2 - CRM core | Completata | Dashboard reale, lista e dettaglio lead, inserimento, stati, note e audit |
 | 3 - Import e deduplica | Completata | CSV, mapping, preview, deduplica concorrente ed export filtrato |
-| 4 - Discovery e scoring | Prossima | Google Places, score deterministico e provider AI |
+| 4 - Discovery e scoring | In corso | Score deterministico completo; Places pronto, verifica live bloccata solo dalla chiave API |
 | 5 - Outreach manuale | Non iniziata | Template WhatsApp, link `wa.me` e timeline |
 | 6 - Cron controllato | Non iniziata | Endpoint protetto, lock e scan runs |
 | 7 - Hardening | Parziale | RLS e controlli base presenti; test E2E, rate limit e logging da completare |
@@ -41,6 +41,11 @@ Il CRM e eseguibile e utilizzabile per inserimento manuale o CSV, gestione ed ex
 - Deduplica per email, telefono, dominio e nome+citta, ricontrollata in conferma atomica.
 - Export CSV filtrato con neutralizzazione delle formule per fogli di calcolo.
 - Privilegi eccedenti (`TRUNCATE`, `REFERENCES`, `TRIGGER`) rimossi da tutte le tabelle pubbliche.
+- Score deterministico versionato, testato e salvato atomicamente con servizio consigliato e audit.
+- Test Supabase dello score superato con utente autenticato e rollback completo.
+- Ricerca Google Places solo server, field mask minima, timeout, retry e gestione quota.
+- Risultati Places effimeri con attribuzioni; nel database restano solo metadati e conteggi della scansione.
+- Discovery confrontata con i lead esistenti prima di mostrare i risultati.
 
 ## Auth ancora da chiudere
 
@@ -58,10 +63,10 @@ Un admin carica un CSV, associa le colonne, vede righe valide e duplicati, confe
 
 ## Prossima milestone dimostrabile
 
-Un admin cerca una categoria in una zona tramite Google Places, confronta risultati normalizzati e duplicati, seleziona le attivita interessanti e le importa nel CRM.
+Con la chiave configurata, un admin cerca una categoria in una zona tramite Google Places e confronta risultati normalizzati, score e duplicati. La persistenza dei dati commerciali verra aggiunta solo dopo aver definito una fonte o un flusso conforme.
 
 ## Blocchi esterni non urgenti
 
-- Credenziali Google Places, necessarie dalla fase discovery.
+- Credenziali Google Places, necessarie per il collaudo live della discovery.
 - Scelta tra OpenAI e Gemini, necessaria dopo lo score deterministico.
 - Booking URL e dominio di produzione, necessari prima del deploy pubblico.
