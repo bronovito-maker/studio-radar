@@ -46,6 +46,6 @@ Costruire uno strumento interno che aiuti a:
 
 ## Stato
 
-Documentazione, fondazioni tecniche, CRM core, import CSV e score deterministico completati. La discovery Google Places e pronta per il collaudo appena viene configurata la chiave API.
+Documentazione, fondazioni tecniche, CRM core, import CSV e score deterministico completati. La discovery Google Places e operativa e verificata con dati reali; il prossimo blocco e il passaggio conforme da risultato a lead.
 
 Il dettaglio verificabile, i lavori aperti e la prossima milestone sono tracciati nello [stato del progetto](docs/project-status.md).

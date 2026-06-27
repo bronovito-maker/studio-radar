@@ -1,12 +1,12 @@
 # Stato Progetto
 
-Ultimo aggiornamento: 27 giugno 2026.
+Ultimo aggiornamento: 28 giugno 2026.
 
 ## Sintesi
 
-Studio Radar ha completato documentazione, fondazioni tecniche, CRM core, import CSV e score deterministico. La base Google Places e pronta: ricerca live, normalizzazione, score e controllo duplicati sono implementati; manca la chiave API per la verifica con dati reali.
+Studio Radar ha completato documentazione, fondazioni tecniche, CRM core, import CSV e score deterministico. La discovery Google Places e operativa: ricerca live, normalizzazione, score e controllo duplicati sono implementati e verificati con dati reali.
 
-Il CRM e eseguibile e utilizzabile per inserimento manuale o CSV, gestione, scoring ed export dei lead. Il flusso MVP completo richiede ancora verifica live della discovery, decisione sull'acquisizione conforme dei risultati e outreach.
+Il CRM e eseguibile e utilizzabile per inserimento manuale o CSV, discovery live, gestione, scoring ed export dei lead. Il flusso MVP completo richiede ancora la decisione sull'acquisizione conforme dei risultati e l'outreach.
 
 ## Avanzamento roadmap
 
@@ -16,7 +16,7 @@ Il CRM e eseguibile e utilizzabile per inserimento manuale o CSV, gestione, scor
 | 1 - Fondazioni tecniche | Completata | Next.js, TypeScript strict, Supabase, migrazioni, RLS, Auth SSR e layout |
 | 2 - CRM core | Completata | Dashboard reale, lista e dettaglio lead, inserimento, stati, note e audit |
 | 3 - Import e deduplica | Completata | CSV, mapping, preview, deduplica concorrente ed export filtrato |
-| 4 - Discovery e scoring | In corso | Score deterministico completo; Places pronto, verifica live bloccata solo dalla chiave API |
+| 4 - Discovery e scoring | In corso | Score deterministico e ricerca Places live completati; resta da definire il passaggio conforme da risultato a lead |
 | 5 - Outreach manuale | Non iniziata | Template WhatsApp, link `wa.me` e timeline |
 | 6 - Cron controllato | Non iniziata | Endpoint protetto, lock e scan runs |
 | 7 - Hardening | Parziale | RLS e controlli base presenti; test E2E, rate limit e logging da completare |
@@ -46,6 +46,7 @@ Il CRM e eseguibile e utilizzabile per inserimento manuale o CSV, gestione, scor
 - Ricerca Google Places solo server, field mask minima, timeout, retry e gestione quota.
 - Risultati Places effimeri con attribuzioni; nel database restano solo metadati e conteggi della scansione.
 - Discovery confrontata con i lead esistenti prima di mostrare i risultati.
+- Collaudo live completato il 28 giugno 2026: 8 hotel e agriturismi trovati a Riccione, 0 duplicati, scansione `succeeded` e nessun errore.
 
 ## Auth ancora da chiudere
 
@@ -63,10 +64,9 @@ Un admin carica un CSV, associa le colonne, vede righe valide e duplicati, confe
 
 ## Prossima milestone dimostrabile
 
-Con la chiave configurata, un admin cerca una categoria in una zona tramite Google Places e confronta risultati normalizzati, score e duplicati. La persistenza dei dati commerciali verra aggiunta solo dopo aver definito una fonte o un flusso conforme.
+Un admin seleziona un risultato interessante e lo trasforma in lead tramite un flusso conforme, mantenendo provenienza, consenso operativo e audit. I contenuti Places non vengono copiati automaticamente nel CRM.
 
 ## Blocchi esterni non urgenti
 
-- Credenziali Google Places, necessarie per il collaudo live della discovery.
 - Scelta tra OpenAI e Gemini, necessaria dopo lo score deterministico.
 - Booking URL e dominio di produzione, necessari prima del deploy pubblico.
