@@ -46,6 +46,6 @@ Costruire uno strumento interno che aiuti a:
 
 ## Stato
 
-Documentazione, fondazioni tecniche, CRM core, import CSV e score deterministico completati. Discovery e shortlist Google Places sono operative; il prossimo blocco e l'arricchimento verificato da fonte indipendente prima della creazione del lead.
+Documentazione, fondazioni tecniche, CRM core, import CSV e score deterministico completati. Discovery e shortlist Google Places sono operative; OpenAI e configurato come livello consultivo. Il prossimo blocco e l'arricchimento verificato dal sito ufficiale prima della creazione del lead.
 
 Il dettaglio verificabile, i lavori aperti e la prossima milestone sono tracciati nello [stato del progetto](docs/project-status.md).

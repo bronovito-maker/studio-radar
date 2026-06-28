@@ -32,27 +32,22 @@
 
 In produzione applicare anche una restrizione adatta al backend e monitorare quota e costi.
 
-## Provider AI
+## OpenAI
 
 ### Uso MVP
 
-- Valutare lead gia normalizzati.
-- Restituire JSON strutturato:
-  - score 0-100;
-  - servizio consigliato;
-  - motivazione;
-  - segnali positivi;
-  - segnali negativi;
-  - confidenza.
+- Analizzare evidenze raccolte dal sito ufficiale del candidato.
+- Restituire Structured Output validato con Zod tramite Responses API.
+- Produrre score consultivo, servizio consigliato, opportunita con evidenza, rischi, dati mancanti e angolo outreach.
 
 ### Regole
 
-- Prompt versionato.
-- Output validato.
+- Provider OpenAI e modello configurabile, default `gpt-5.4-mini`.
+- Prompt e contratto versionati.
+- Output validato prima di qualsiasi persistenza.
 - Fallback se AI non disponibile.
 - Nessuna decisione irreversibile solo AI.
-- Provider da scegliere tra Gemini e OpenAI.
-- Implementare interfaccia astratta per evitare lock-in.
+- `store: false` nelle richieste Responses API.
 
 ## Calendly o booking URL
 

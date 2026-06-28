@@ -7,7 +7,7 @@
 - Backend: Next.js Route Handlers e Server Actions dove appropriate.
 - Database: Supabase PostgreSQL.
 - Auth: Supabase Auth.
-- AI: provider astratto, prima implementazione Gemini o OpenAI da scegliere in sviluppo.
+- AI: OpenAI Responses API con Structured Outputs; modello configurabile, default `gpt-5.4-mini`.
 - Maps: Google Places API.
 - Cron: Vercel Cron o scheduler equivalente.
 - Test: Vitest per logica, Playwright per flussi principali.

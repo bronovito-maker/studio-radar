@@ -31,13 +31,13 @@ Questo file descrive le variabili previste. I valori reali non vanno committati.
 
 ## AI Provider
 
-Una sola delle seguenti famiglie sara richiesta in base alla scelta provider.
+OpenAI e il provider scelto. Il CRM continua a funzionare senza chiave, ma le analisi AI restano disabilitate.
 
 | Nome | Obbligatoria | Note |
 |---|---|---|
-| `GEMINI_API_KEY` | se Gemini | Solo server |
-| `OPENAI_API_KEY` | se OpenAI | Solo server |
-| `AI_SCORING_MODEL` | si per scoring AI | Nome modello configurabile |
+| `OPENAI_API_KEY` | si per analisi AI | Solo server |
+| `AI_SCORING_PROVIDER` | si per analisi AI | Valore corrente: `openai` |
+| `AI_SCORING_MODEL` | si per analisi AI | Default: `gpt-5.4-mini` |
 
 ## Booking
 

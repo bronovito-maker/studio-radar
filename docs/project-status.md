@@ -49,6 +49,8 @@ Il CRM e eseguibile e utilizzabile per inserimento manuale o CSV, discovery live
 - Collaudo live completato il 28 giugno 2026: 8 hotel e agriturismi trovati a Riccione, 0 duplicati, scansione `succeeded` e nessun errore.
 - Shortlist condivisa protetta da RLS: salva solo Place ID e contesto interno, con dettagli ricaricati live e rimozione controllata.
 - Place Details verificato con una chiamata reale e field mask limitata ai dati necessari alla shortlist.
+- OpenAI scelto come provider AI; SDK ufficiale, Responses API e Structured Outputs configurati con modello default `gpt-5.4-mini`.
+- Contratto AI versionato e coperto da test; senza `OPENAI_API_KEY` il CRM resta operativo e l'analisi AI e disabilitata.
 
 ## Auth ancora da chiudere
 
@@ -70,5 +72,5 @@ Un admin seleziona un candidato in shortlist, avvia l'arricchimento dal sito uff
 
 ## Blocchi esterni non urgenti
 
-- Scelta tra OpenAI e Gemini, necessaria dopo lo score deterministico.
+- Chiave OpenAI, necessaria per il primo collaudo reale dell'analisi sito.
 - Booking URL e dominio di produzione, necessari prima del deploy pubblico.

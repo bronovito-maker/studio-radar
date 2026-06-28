@@ -112,7 +112,7 @@ Verifica:
 Task:
 
 - score deterministico;
-- provider AI astratto;
+- integrazione OpenAI Responses API con Structured Outputs;
 - prompt versionato;
 - validazione JSON;
 - storico score.

@@ -30,32 +30,36 @@ Pesi correnti:
 
 Il risultato e sempre limitato tra 0 e 100. A parita di input, output e motivazione restano identici.
 
-### 2. Score AI
+### 2. Analisi AI OpenAI
 
 Usato per:
 
-- sintetizzare motivazione;
-- suggerire servizio;
-- ridurre falsi positivi;
-- evidenziare segnali non banali nei dati disponibili.
+- analizzare il testo verificabile del sito ufficiale;
+- sintetizzare punti di forza e opportunita digitali;
+- suggerire il servizio con prove esplicite;
+- preparare un angolo outreach consulenziale;
+- evidenziare dati mancanti invece di inventarli.
 
-## Provider AI
+## Provider AI scelto
 
-Decisione aperta tra Gemini e OpenAI. Non blocca l'MVP: l'AI sara un secondo livello di analisi, mai la fonte primaria dello score.
+OpenAI tramite Responses API e Structured Outputs. Il modello iniziale e `gpt-5.4-mini`, configurabile con `AI_SCORING_MODEL`; `gpt-5.5` resta disponibile per analisi premium o casi complessi.
 
-Nel codice il provider deve restare astratto, cosi da poter cambiare modello senza riscrivere lo scoring.
+Versione prompt iniziale: `website-assessment-v2026.06.28-1`.
+
+L'AI resta un secondo livello consultivo: non modifica lo score deterministico, non crea lead senza conferma e non invia messaggi.
 
 ## Output richiesto
 
 ```json
 {
-  "score": 72,
-  "grade": "hot",
-  "recommended_service": "restyling-sito",
-  "reasoning": "Attivita con molte recensioni, sito presente ma migliorabile e mercato locale adatto.",
-  "positive_signals": ["review_count_high", "target_area"],
-  "negative_signals": ["website_present"],
-  "confidence": 0.78
+  "summary": "Presenza digitale attiva con opportunita nel percorso di conversione.",
+  "advisoryScore": 72,
+  "recommendedService": "booking-conversione",
+  "confidence": 0.78,
+  "opportunities": [],
+  "risks": [],
+  "missingEvidence": [],
+  "outreachAngle": "Proporre una verifica consulenziale del percorso di prenotazione."
 }
 ```
 
