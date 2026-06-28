@@ -3,12 +3,14 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
 import { AnonymizeLeadForm } from "@/components/anonymize-lead-form";
+import { LeadDetailsForm } from "@/components/lead-details-form";
 import { SubmitButton } from "@/components/submit-button";
 import { OutreachComposer } from "@/components/outreach-composer";
 import { websiteAssessmentSchema, type WebsiteAssessment } from "@/lib/ai/contracts";
 import { requireViewer } from "@/lib/auth";
 import { formatCurrency, formatDate, LEAD_STATUSES, SOURCE_LABELS, STATUS_LABELS } from "@/lib/crm";
 import type { ScoreComponent } from "@/lib/scoring/deterministic";
+import { isScoreSnapshotCurrent } from "@/lib/scoring/snapshot";
 import { createClient } from "@/lib/supabase/server";
 import type { Json } from "@/types/database";
 import { analyzeLeadWithOpenAi, assignLeadAction, recordEmailReplyAction, scoreLeadDeterministically, updateLeadNotes, updateLeadStatus } from "../actions";
@@ -22,6 +24,7 @@ const EVENT_LABELS: Record<string, string> = {
   lead_created: "Lead creato",
   status_changed: "Stato aggiornato",
   notes_updated: "Note aggiornate",
+  lead_details_updated: "Dati anagrafici aggiornati",
   deterministic_score_created: "Score deterministico calcolato",
   hybrid_score_created: "Score ibrido OpenAI calcolato",
   candidate_converted: "Candidato verificato e aggiunto al CRM",
@@ -71,6 +74,18 @@ const SIGNAL_LABELS: Record<string, string> = {
   business_closed_permanently: "Attività chiusa definitivamente",
 };
 
+const DETAIL_FIELD_LABELS: Record<string, string> = {
+  business_name: "Nome attività",
+  city: "Città",
+  region: "Regione",
+  category: "Categoria",
+  address: "Indirizzo",
+  phone: "Telefono",
+  email: "Email",
+  website_url: "Sito web",
+  estimated_value: "Valore stimato",
+};
+
 function scoreComponents(snapshot: Json): ScoreComponent[] {
   if (!snapshot || Array.isArray(snapshot) || typeof snapshot !== "object") return [];
   const value = snapshot.components;
@@ -94,12 +109,18 @@ function websiteAssessment(snapshot: Json): WebsiteAssessment | null {
   return parsed.success ? parsed.data : null;
 }
 
+function detailChanges(snapshot: Json) {
+  if (!snapshot || Array.isArray(snapshot) || typeof snapshot !== "object") return [];
+  const fields = snapshot.changed_fields;
+  return Array.isArray(fields) ? fields.filter((field) => typeof field === "string") : [];
+}
+
 export default async function LeadDetailPage({ params, searchParams }: LeadDetailPageProps) {
   const viewer = await requireViewer();
   const { id } = await params;
   const feedback = await searchParams;
   const supabase = await createClient();
-  const [{ data: lead, error }, { data: events }, { data: latestScore }, { data: services }, { data: settings }, { data: emails }, { data: collaborators }] = await Promise.all([
+  const [{ data: lead, error }, { data: events }, { data: rawLatestScore }, { data: services }, { data: settings }, { data: emails }, { data: collaborators }] = await Promise.all([
     supabase.from("leads").select("*").eq("id", id).single(),
     supabase.from("lead_events").select("id, event_type, payload, created_at").eq("lead_id", id).order("created_at", { ascending: false }).limit(30),
     supabase.from("lead_scores").select("score, grade, reasoning, positive_signals, negative_signals, deterministic_score, ai_score, confidence, provider, model, prompt_version, recommended_service_id, input_snapshot, created_at").eq("lead_id", id).order("created_at", { ascending: false }).limit(1).maybeSingle(),
@@ -112,6 +133,8 @@ export default async function LeadDetailPage({ params, searchParams }: LeadDetai
   ]);
 
   if (error || !lead) notFound();
+  const scoreIsStale = Boolean(rawLatestScore && !isScoreSnapshotCurrent(rawLatestScore.input_snapshot, lead));
+  const latestScore = scoreIsStale ? null : rawLatestScore;
   const recommendedService = services?.find((service) => service.id === latestScore?.recommended_service_id)?.name;
   const components = latestScore ? scoreComponents(latestScore.input_snapshot) : [];
   const assessment = latestScore ? websiteAssessment(latestScore.input_snapshot) : null;
@@ -135,6 +158,11 @@ export default async function LeadDetailPage({ params, searchParams }: LeadDetai
               <div><dt><Globe size={16} /> Sito web</dt><dd>{lead.website_url ? <a href={lead.website_url} target="_blank" rel="noreferrer">Apri sito</a> : "Non presente"}</dd></div>
               <div><dt><Calendar size={16} /> Inserito</dt><dd>{formatDate(lead.created_at)} · {SOURCE_LABELS[lead.source]}</dd></div>
             </dl>
+          </article>
+
+          <article className="panel">
+            <div className="panel-header"><div><p className="eyebrow">Anagrafica</p><h2>Dati lead</h2></div></div>
+            <LeadDetailsForm lead={lead} />
           </article>
 
           {assessment ? (
@@ -183,7 +211,12 @@ export default async function LeadDetailPage({ params, searchParams }: LeadDetai
 
           <article className="panel">
             <div className="panel-header"><div><p className="eyebrow">Audit</p><h2>Timeline</h2></div></div>
-            {events?.length ? <ol className="timeline">{events.map((event) => <li key={event.id}><span className="timeline-dot" /><div><strong>{EVENT_LABELS[event.event_type] || event.event_type}</strong><span>{formatDate(event.created_at)}</span>{event.event_type === "status_changed" && event.payload && typeof event.payload === "object" && !Array.isArray(event.payload) ? <p>Da {STATUS_LABELS[event.payload.from as keyof typeof STATUS_LABELS] ?? String(event.payload.from)} a {STATUS_LABELS[event.payload.to as keyof typeof STATUS_LABELS] ?? String(event.payload.to)}</p> : null}</div></li>)}</ol> : <p className="muted-copy">Nessun evento registrato.</p>}
+            {events?.length ? <ol className="timeline">{events.map((event) => {
+              const payload = event.payload && typeof event.payload === "object" && !Array.isArray(event.payload) ? event.payload : null;
+              const changedFields = event.event_type === "lead_details_updated" && payload ? detailChanges(payload) : [];
+
+              return <li key={event.id}><span className="timeline-dot" /><div><strong>{EVENT_LABELS[event.event_type] || event.event_type}</strong><span>{formatDate(event.created_at)}</span>{event.event_type === "status_changed" && payload ? <p>Da {STATUS_LABELS[payload.from as keyof typeof STATUS_LABELS] ?? String(payload.from)} a {STATUS_LABELS[payload.to as keyof typeof STATUS_LABELS] ?? String(payload.to)}</p> : null}{changedFields.length ? <p>Campi aggiornati: {changedFields.map((field) => DETAIL_FIELD_LABELS[field] || field).join(" · ")}</p> : null}</div></li>;
+            })}</ol> : <p className="muted-copy">Nessun evento registrato.</p>}
           </article>
         </section>
 
@@ -199,7 +232,7 @@ export default async function LeadDetailPage({ params, searchParams }: LeadDetai
                   <div className="signal-list">{latestScore.positive_signals.map((signal) => <span className="signal signal-positive" key={signal}>{SIGNAL_LABELS[signal] || signal}</span>)}{latestScore.negative_signals.map((signal) => <span className="signal signal-negative" key={signal}>{SIGNAL_LABELS[signal] || signal}</span>)}</div>
                   <dl className="score-meta"><div><dt>Servizio</dt><dd>{recommendedService || "Da definire"}</dd></div><div><dt>Confidenza</dt><dd>{Math.round((latestScore.confidence ?? 0) * 100)}%</dd></div>{latestScore.ai_score !== null ? <><div><dt>Base</dt><dd>{latestScore.deterministic_score}/100</dd></div><div><dt>OpenAI</dt><dd>{latestScore.ai_score}/100</dd></div></> : null}</dl>
                 </>
-              ) : <p className="muted-copy">Nessuna valutazione disponibile per questo lead.</p>}
+              ) : <p className="muted-copy">{scoreIsStale ? "I dati del lead sono cambiati. Ricalcola lo score prima di usarlo." : "Nessuna valutazione disponibile per questo lead."}</p>}
               <form className="score-action" action={scoreLeadDeterministically}>
                 <input type="hidden" name="leadId" value={lead.id} />
                 <SubmitButton className="secondary-button" pendingLabel="Calcolo..."><RefreshCw size={15} /> {latestScore ? "Ricalcola" : "Calcola score"}</SubmitButton>

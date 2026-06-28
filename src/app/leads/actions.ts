@@ -11,20 +11,48 @@ import { isLeadStatus } from "@/lib/crm";
 import { followUpBodies, withOptOut } from "@/lib/email-outreach";
 import { scoreLead } from "@/lib/scoring/deterministic";
 import { combineScores } from "@/lib/scoring/hybrid";
+import { isScoreSnapshotCurrent } from "@/lib/scoring/snapshot";
 import { consumeRateLimit } from "@/lib/rate-limit";
 import { createClient } from "@/lib/supabase/server";
 import type { Json } from "@/types/database";
 
 const optionalText = z.string().trim().max(300).transform((value) => value || null);
+const optionalAddress = z.string().trim().max(300).transform((value) => value || null);
+const optionalPhone = z.string().trim().max(40).transform((value) => value || null);
+const optionalEmail = z
+  .string()
+  .trim()
+  .max(254)
+  .refine((value) => !value || z.email().safeParse(value).success, "Email non valida")
+  .transform((value) => value || null);
+const optionalWebsite = z
+  .string()
+  .trim()
+  .max(500)
+  .refine((value) => !value || z.url().safeParse(value).success, "URL non valido")
+  .transform((value) => value || null);
 
 const createLeadSchema = z.object({
   businessName: z.string().trim().min(2, "Inserisci almeno 2 caratteri").max(160),
   city: optionalText,
   region: optionalText,
   category: optionalText,
-  phone: z.string().trim().max(40).transform((value) => value || null),
-  email: z.string().trim().max(254).refine((value) => !value || z.email().safeParse(value).success, "Email non valida").transform((value) => value || null),
-  websiteUrl: z.string().trim().max(500).refine((value) => !value || z.url().safeParse(value).success, "URL non valido").transform((value) => value || null),
+  phone: optionalPhone,
+  email: optionalEmail,
+  websiteUrl: optionalWebsite,
+  estimatedValue: z.coerce.number().min(0).max(10_000_000),
+});
+
+const leadDetailsSchema = z.object({
+  leadId: z.uuid(),
+  businessName: z.string().trim().min(2, "Inserisci almeno 2 caratteri").max(160),
+  city: optionalText,
+  region: optionalText,
+  category: optionalText,
+  address: optionalAddress,
+  phone: optionalPhone,
+  email: optionalEmail,
+  websiteUrl: optionalWebsite,
   estimatedValue: z.coerce.number().min(0).max(10_000_000),
 });
 
@@ -128,6 +156,88 @@ export async function updateLeadNotes(formData: FormData) {
 
   revalidatePath(`/leads/${idResult.data}`);
   redirect(withMessage(`/leads/${idResult.data}`, "success", "Nota salvata"));
+}
+
+export async function updateLeadDetailsAction(formData: FormData) {
+  const parsed = leadDetailsSchema.safeParse({
+    leadId: value(formData, "leadId"),
+    businessName: value(formData, "businessName"),
+    city: value(formData, "city"),
+    region: value(formData, "region"),
+    category: value(formData, "category"),
+    address: value(formData, "address"),
+    phone: value(formData, "phone"),
+    email: value(formData, "email"),
+    websiteUrl: value(formData, "websiteUrl"),
+    estimatedValue: value(formData, "estimatedValue") || "0",
+  });
+
+  if (!parsed.success) {
+    const leadId = value(formData, "leadId");
+    redirect(withMessage(leadId ? `/leads/${leadId}` : "/leads", "error", parsed.error.issues[0]?.message ?? "Dati non validi"));
+  }
+
+  const supabase = await createClient();
+  const { data: current, error: readError } = await supabase
+    .from("leads")
+    .select("business_name, city, region, category, address, phone, email, website_url, estimated_value")
+    .eq("id", parsed.data.leadId)
+    .single();
+
+  if (readError || !current) {
+    redirect(withMessage(`/leads/${parsed.data.leadId}`, "error", "Lead non trovato"));
+  }
+
+  const nextValues = {
+    business_name: parsed.data.businessName,
+    city: parsed.data.city,
+    region: parsed.data.region,
+    category: parsed.data.category,
+    address: parsed.data.address,
+    phone: parsed.data.phone,
+    email: parsed.data.email,
+    website_url: parsed.data.websiteUrl,
+    estimated_value: parsed.data.estimatedValue,
+  };
+
+  const isUnchanged = current.business_name === nextValues.business_name
+    && current.city === nextValues.city
+    && current.region === nextValues.region
+    && current.category === nextValues.category
+    && current.address === nextValues.address
+    && current.phone === nextValues.phone
+    && current.email === nextValues.email
+    && current.website_url === nextValues.website_url
+    && current.estimated_value === nextValues.estimated_value;
+
+  if (isUnchanged) {
+    redirect(withMessage(`/leads/${parsed.data.leadId}`, "success", "Dati già aggiornati"));
+  }
+
+  const { error } = await supabase.rpc("update_lead_details", {
+    p_lead_id: parsed.data.leadId,
+    p_business_name: parsed.data.businessName,
+    p_city: parsed.data.city,
+    p_region: parsed.data.region,
+    p_category: parsed.data.category,
+    p_address: parsed.data.address,
+    p_phone: parsed.data.phone,
+    p_email: parsed.data.email,
+    p_website_url: parsed.data.websiteUrl,
+    p_estimated_value: parsed.data.estimatedValue,
+  });
+
+  if (error) {
+    const message = error.code === "23505"
+      ? "Esiste già un lead con gli stessi dati identificativi."
+      : "Dati non aggiornati. Riprova.";
+    redirect(withMessage(`/leads/${parsed.data.leadId}`, "error", message));
+  }
+
+  revalidatePath("/");
+  revalidatePath("/leads");
+  revalidatePath(`/leads/${parsed.data.leadId}`);
+  redirect(withMessage(`/leads/${parsed.data.leadId}`, "success", "Dati aggiornati"));
 }
 
 export async function assignLeadAction(formData: FormData) {
@@ -302,7 +412,7 @@ export async function generateOutreachDraftAction(
 
   const supabase = await createClient();
   const [{ data: lead }, { data: latestScore }, { data: settings }] = await Promise.all([
-    supabase.from("leads").select("id, business_name, category, city, recommended_service_id").eq("id", idResult.data).single(),
+    supabase.from("leads").select("id, business_name, category, city, region, phone, email, website_url, rating, review_count, has_booking, recommended_service_id").eq("id", idResult.data).single(),
     supabase.from("lead_scores").select("input_snapshot, recommended_service_id").eq("lead_id", idResult.data).order("created_at", { ascending: false }).limit(1).maybeSingle(),
     supabase.from("settings").select("booking_url").eq("id", 1).single(),
   ]);
@@ -311,11 +421,12 @@ export async function generateOutreachDraftAction(
     return { status: "error", message: "Limite bozze raggiunto. Riprova più tardi." };
   }
 
-  const serviceId = latestScore?.recommended_service_id ?? lead.recommended_service_id;
+  const currentScore = latestScore && isScoreSnapshotCurrent(latestScore.input_snapshot, lead) ? latestScore : null;
+  const serviceId = currentScore?.recommended_service_id ?? (!latestScore ? lead.recommended_service_id : null);
   const { data: service } = serviceId
     ? await supabase.from("services").select("name").eq("id", serviceId).maybeSingle()
     : { data: null };
-  const snapshot = latestScore?.input_snapshot;
+  const snapshot = currentScore?.input_snapshot;
   const assessmentValue = snapshot && !Array.isArray(snapshot) && typeof snapshot === "object"
     ? snapshot.assessment
     : null;

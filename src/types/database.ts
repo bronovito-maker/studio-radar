@@ -476,6 +476,21 @@ export type Database = {
         Args: { p_lead_id: string; p_notes: string };
         Returns: undefined;
       };
+      update_lead_details: {
+        Args: {
+          p_lead_id: string;
+          p_business_name: string;
+          p_city?: string | null;
+          p_region?: string | null;
+          p_category?: string | null;
+          p_address?: string | null;
+          p_phone?: string | null;
+          p_email?: string | null;
+          p_website_url?: string | null;
+          p_estimated_value?: number;
+        };
+        Returns: undefined;
+      };
       get_dashboard_summary: {
         Args: Record<PropertyKey, never>;
         Returns: Json;

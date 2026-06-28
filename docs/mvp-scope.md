@@ -36,6 +36,7 @@ Validare il flusso completo:
 - Tabella paginata server side.
 - Filtri per stato, regione, score minimo, sorgente, testo libero.
 - Dettaglio lead.
+- Modifica dei dati anagrafici del lead dopo il salvataggio.
 - Note interne.
 - Cambio stato rapido.
 - Assegnazione collaboratore.

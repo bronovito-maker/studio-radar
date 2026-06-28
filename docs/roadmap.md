@@ -26,6 +26,7 @@
 - Lista lead.
 - Filtri server side.
 - Dettaglio lead.
+- Modifica dati anagrafici lead.
 - Cambio stato.
 - Note.
 - Audit events.
@@ -80,4 +81,3 @@
 - Client portal.
 - WhatsApp Business Platform conforme.
 - Report avanzati.
-
