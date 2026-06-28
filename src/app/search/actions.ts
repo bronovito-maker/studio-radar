@@ -214,6 +214,9 @@ export async function searchPlacesAction(
         reviewCount: item.place.userRatingCount,
         hasBooking: item.place.reservable,
         businessStatus: item.place.businessStatus ?? null,
+        source: "google_places",
+        googlePlaceId: item.place.id,
+        websiteVerification: item.place.websiteUri ? "verified_present" : "not_detected",
       });
 
       return {
@@ -238,6 +241,8 @@ export async function searchPlacesAction(
         shortlisted: shortlistedPlaceIds.has(item.place.id),
       };
     });
+
+    results.sort((a, b) => b.score.opportunityScore - a.score.opportunityScore || b.score.confidence - a.score.confidence);
 
     await supabase
       .from("scan_runs")

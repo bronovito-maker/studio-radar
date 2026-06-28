@@ -47,6 +47,6 @@ Costruire uno strumento interno che aiuti a:
 
 ## Stato
 
-Il flusso MVP e implementato: discovery, shortlist, arricchimento dal sito ufficiale, CRM, scoring ibrido, outreach manuale e automazione notturna controllata. Restano l'attivazione delle configurazioni di produzione, il collaudo autenticato con account E2E dedicati e il deploy pubblico.
+Il flusso MVP e implementato: discovery, shortlist, arricchimento dal sito ufficiale, CRM, scoring commerciale V2 per offerta, outreach manuale e automazione notturna controllata. OpenAI interpreta le evidenze senza modificare score o priorita.
 
 Il dettaglio verificabile, i lavori aperti e la prossima milestone sono tracciati nello [stato del progetto](docs/project-status.md).

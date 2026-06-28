@@ -61,15 +61,16 @@ Storico score, non solo ultimo valore.
 |---|---|---|
 | id | uuid | PK |
 | lead_id | uuid | FK `leads.id` |
-| score | int | 0-100 |
+| score | int | Opportunity score V2, 0-100 |
 | grade | text | es. `cold`, `warm`, `hot` |
 | recommended_service | text | |
 | reasoning | text | Motivazione sintetica |
-| deterministic_score | int | Score regole |
-| ai_score | int | Nullable |
-| model | text | Provider/modello |
-| prompt_version | text | Versionamento |
-| input_snapshot | jsonb | Dati usati |
+| deterministic_score | int | Uguale a `score` nella V2 |
+| ai_score | int | Legacy nullable; la V2 non lo valorizza |
+| confidence | numeric | Copertura prove, normalizzata 0-1 |
+| model | text | Legacy/compatibilita storica |
+| prompt_version | text | Versione scoring deterministico |
+| input_snapshot | jsonb | Input, contratto `scoringV2` e interpretazione AI opzionale |
 | created_at | timestamptz | |
 
 ### `lead_events`

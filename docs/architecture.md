@@ -43,7 +43,7 @@ Utente o cron
   -> normalizzazione risultati
   -> deduplica
   -> scoring deterministico
-  -> scoring AI se necessario
+  -> interpretazione AI opzionale, senza modifica dello score
   -> salvataggio lead + score + audit
   -> visualizzazione in CRM
 ```

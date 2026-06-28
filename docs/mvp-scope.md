@@ -51,9 +51,10 @@ Validare il flusso completo:
 
 ### Scoring
 
-- Score deterministico base.
-- Score AI solo per lead con dati sufficienti o potenziale minimo.
-- Salvataggio di score, motivazione, versione prompt e modello.
+- Opportunity score deterministico come migliore offerta eleggibile.
+- Confidence separata e prossima azione derivata dalla copertura delle prove.
+- Interpretazione OpenAI opzionale senza peso numerico.
+- Salvataggio di offer score, motivazione, evidenze e versione nello snapshot JSON.
 
 ### Outreach manuale
 

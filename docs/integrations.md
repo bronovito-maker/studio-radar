@@ -46,7 +46,7 @@ In produzione applicare anche una restrizione adatta al backend e monitorare quo
 
 - Analizzare evidenze raccolte dal sito ufficiale del candidato.
 - Restituire Structured Output validato con Zod tramite Responses API.
-- Produrre score consultivo, servizio consigliato, opportunita con evidenza, rischi, dati mancanti e angolo outreach.
+- Interpretare opportunita con evidenza, rischi, dati mancanti e angolo outreach senza produrre score numerici o decisioni operative.
 
 ### Regole
 
@@ -54,7 +54,7 @@ In produzione applicare anche una restrizione adatta al backend e monitorare quo
 - Prompt e contratto versionati.
 - Output validato prima di qualsiasi persistenza.
 - Fallback se AI non disponibile.
-- Nessuna decisione irreversibile solo AI.
+- Score, offerta persistita e prossima azione restano interamente deterministici.
 - `store: false` nelle richieste Responses API.
 
 ## Calendly o booking URL

@@ -4,7 +4,7 @@ Ultimo aggiornamento: 28 giugno 2026.
 
 ## Sintesi
 
-Studio Radar ha completato documentazione, fondazioni tecniche, CRM core, import CSV e scoring ibrido. La discovery Google Places e operativa: ricerca live, normalizzazione, score e controllo duplicati sono implementati e verificati con dati reali.
+Studio Radar ha completato documentazione, fondazioni tecniche, CRM core, import CSV e scoring commerciale V2 per offerta. La discovery Google Places e operativa: ricerca live, normalizzazione, opportunity score e controllo duplicati sono implementati.
 
 Il CRM e eseguibile e utilizzabile per inserimento manuale o CSV, discovery live e notturna, gestione e assegnazione, scoring deterministico, analisi OpenAI del sito, outreach WhatsApp/email ed export. Email, webhook e scheduler sono attivi sul dominio pubblico Render.
 
@@ -43,7 +43,8 @@ Il CRM e eseguibile e utilizzabile per inserimento manuale o CSV, discovery live
 - Export CSV filtrato con neutralizzazione delle formule per fogli di calcolo.
 - Privilegi eccedenti (`TRUNCATE`, `REFERENCES`, `TRIGGER`) rimossi da tutte le tabelle pubbliche.
 - Score deterministico v2 scomposto in mercato, solidita, opportunita digitale e contattabilita, salvato atomicamente con audit.
-- Score ibrido operativo: OpenAI pesa dal 39% al 45% solo con confidenza ed evidenze sufficienti.
+- Scoring V2 operativo: opportunity come migliore offerta eleggibile, confidence separata e `nextAction` deterministica.
+- OpenAI interpreta fonti ufficiali ma non modifica score, offerta salvata o prossima azione.
 - Soglia automatica di qualifica alzata a 65 e verificata sui valori limite 64/65 con rollback.
 - Test Supabase dello score superato con utente autenticato e rollback completo.
 - Ricerca Google Places solo server, field mask minima, timeout, retry e gestione quota.
@@ -55,7 +56,7 @@ Il CRM e eseguibile e utilizzabile per inserimento manuale o CSV, discovery live
 - OpenAI scelto come provider AI; SDK ufficiale, Responses API e Structured Outputs configurati con modello default `gpt-5.4-mini`.
 - Contratto AI versionato e coperto da test; chiave, Structured Output e web search con `gpt-5.4-mini` verificati con chiamate sintetiche reali.
 - Analisi manuale disponibile nella scheda lead: ricerca limitata al dominio ufficiale, fonti obbligatorie validate server side e risultato salvato atomicamente.
-- RPC ibrida verificata con utente autenticato e rollback completo; nessun dato sintetico persistito.
+- Persistenza V2 verificata con rollback: `manual_verify` non qualifica, `contact_now` sopra soglia qualifica e una raccomandazione obsoleta viene rimossa.
 - Flusso shortlist → verifica → lead completato: OpenAI estrae dati solo dal sito ufficiale, l'utente conferma e la RPC crea il lead con deduplica e audit atomici.
 - Conversione candidato verificata sui casi creazione e duplicato con rollback; nessun dato sintetico persistito.
 - Coda outreach e composer WhatsApp completati: bozza OpenAI modificabile, fallback deterministico e booking link globale.

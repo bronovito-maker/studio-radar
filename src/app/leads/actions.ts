@@ -10,7 +10,6 @@ import { BrevoError, sendBrevoEmail } from "@/lib/brevo";
 import { isLeadStatus } from "@/lib/crm";
 import { followUpBodies, withOptOut } from "@/lib/email-outreach";
 import { scoreLead } from "@/lib/scoring/deterministic";
-import { combineScores } from "@/lib/scoring/hybrid";
 import { isScoreSnapshotCurrent } from "@/lib/scoring/snapshot";
 import { consumeRateLimit } from "@/lib/rate-limit";
 import { createClient } from "@/lib/supabase/server";
@@ -273,7 +272,7 @@ export async function scoreLeadDeterministically(formData: FormData) {
   const supabase = await createClient();
   const { data: lead, error: leadError } = await supabase
     .from("leads")
-    .select("id, business_name, region, category, phone, email, website_url, rating, review_count, has_booking")
+    .select("id, business_name, region, category, phone, email, website_url, rating, review_count, has_booking, source, google_place_id")
     .eq("id", idResult.data)
     .single();
 
@@ -292,6 +291,8 @@ export async function scoreLeadDeterministically(formData: FormData) {
     reviewCount: lead.review_count,
     hasBooking: lead.has_booking ? true : undefined,
     businessStatus: null,
+    source: lead.source,
+    googlePlaceId: lead.google_place_id,
   };
   const result = scoreLead(input);
   const { error } = await supabase.rpc("save_deterministic_score", {
@@ -301,10 +302,10 @@ export async function scoreLeadDeterministically(formData: FormData) {
     p_reasoning: result.reasoning,
     p_positive_signals: result.positiveSignals,
     p_negative_signals: result.negativeSignals,
-    p_confidence: result.confidence,
+    p_confidence: result.confidence / 100,
     p_version: result.version,
-    p_input_snapshot: { input, components: result.components } as unknown as Json,
-    p_recommended_service_slug: result.recommendedService,
+    p_input_snapshot: { input, scoringV2: result } as unknown as Json,
+    p_recommended_service_slug: result.recommendedService ?? "",
   });
 
   if (error) {
@@ -324,7 +325,7 @@ export async function analyzeLeadWithOpenAi(formData: FormData) {
   const supabase = await createClient();
   const { data: lead, error: leadError } = await supabase
     .from("leads")
-    .select("id, business_name, region, category, phone, email, website_url, rating, review_count, has_booking")
+    .select("id, business_name, region, category, phone, email, website_url, rating, review_count, has_booking, source, google_place_id")
     .eq("id", idResult.data)
     .single();
 
@@ -346,6 +347,8 @@ export async function analyzeLeadWithOpenAi(formData: FormData) {
     reviewCount: lead.review_count,
     hasBooking: lead.has_booking ? true : undefined,
     businessStatus: null,
+    source: lead.source,
+    googlePlaceId: lead.google_place_id,
   };
   const deterministic = scoreLead(input);
 
@@ -365,31 +368,27 @@ export async function analyzeLeadWithOpenAi(formData: FormData) {
     redirect(withMessage(`/leads/${lead.id}`, "error", message));
   }
 
-  const hybrid = combineScores(deterministic, analysis.assessment);
-  const { error } = await supabase.rpc("save_hybrid_score", {
+  const { error } = await supabase.rpc("save_deterministic_score", {
     p_lead_id: lead.id,
-    p_score: hybrid.score,
-    p_grade: hybrid.grade,
-    p_deterministic_score: hybrid.deterministicScore,
-    p_ai_score: analysis.assessment.advisoryScore,
-    p_reasoning: hybrid.reasoning,
+    p_score: deterministic.opportunityScore,
+    p_grade: deterministic.grade,
+    p_reasoning: `${deterministic.reasoning} ${analysis.assessment.summary}`,
     p_positive_signals: deterministic.positiveSignals,
     p_negative_signals: deterministic.negativeSignals,
-    p_confidence: hybrid.confidence,
-    p_model: analysis.model,
-    p_version: analysis.promptVersion,
+    p_confidence: deterministic.confidence / 100,
+    p_version: deterministic.version,
     p_input_snapshot: {
       input,
-      components: deterministic.components,
+      scoringV2: deterministic,
       assessment: analysis.assessment,
       ai: {
         domain: analysis.domain,
         responseId: analysis.responseId,
-        aiWeight: hybrid.aiWeight,
-        hybridVersion: hybrid.version,
+        model: analysis.model,
+        promptVersion: analysis.promptVersion,
       },
     } as unknown as Json,
-    p_recommended_service_slug: hybrid.recommendedService,
+    p_recommended_service_slug: deterministic.recommendedService ?? "",
   });
 
   if (error) {
@@ -399,7 +398,7 @@ export async function analyzeLeadWithOpenAi(formData: FormData) {
   revalidatePath("/");
   revalidatePath("/leads");
   revalidatePath(`/leads/${lead.id}`);
-  redirect(withMessage(`/leads/${lead.id}`, "success", `Analisi OpenAI completata: ${hybrid.score}/100`));
+  redirect(withMessage(`/leads/${lead.id}`, "success", `Interpretazione OpenAI completata. Opportunity invariata: ${deterministic.opportunityScore}/100`));
 }
 
 export async function generateOutreachDraftAction(

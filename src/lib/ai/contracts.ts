@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const WEBSITE_ASSESSMENT_VERSION = "website-assessment-v2026.06.28-2";
+export const WEBSITE_ASSESSMENT_VERSION = "website-interpretation-v2026.06.28-3";
 export const CANDIDATE_ENRICHMENT_VERSION = "candidate-enrichment-v2026.06.28-2";
 export const OUTREACH_DRAFT_VERSION = "outreach-draft-v2026.06.28-1";
 const httpUrlSchema = z.string().max(2048).regex(/^https?:\/\/[^\s]+$/);
@@ -16,9 +16,6 @@ export const serviceSlugSchema = z.enum([
 
 export const websiteAssessmentSchema = z.object({
   summary: z.string().min(1).max(600),
-  advisoryScore: z.number().int().min(0).max(100),
-  recommendedService: serviceSlugSchema,
-  confidence: z.number().min(0).max(1),
   opportunities: z.array(z.object({
     service: serviceSlugSchema,
     evidence: z.string().min(1).max(300),

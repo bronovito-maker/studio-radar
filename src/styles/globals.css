@@ -1504,6 +1504,25 @@ h2 {
   gap: 9px;
 }
 
+.offer-score-list {
+  display: grid;
+  border-top: 1px solid var(--line);
+}
+
+.offer-score-list > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  border-bottom: 1px solid var(--line);
+  padding: 7px 0;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.offer-score-list strong {
+  color: var(--foreground);
+}
+
 .score-component {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 72px 36px;

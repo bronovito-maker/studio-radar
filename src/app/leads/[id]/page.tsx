@@ -9,7 +9,6 @@ import { OutreachComposer } from "@/components/outreach-composer";
 import { websiteAssessmentSchema, type WebsiteAssessment } from "@/lib/ai/contracts";
 import { requireViewer } from "@/lib/auth";
 import { formatCurrency, formatDate, LEAD_STATUSES, SOURCE_LABELS, STATUS_LABELS } from "@/lib/crm";
-import type { ScoreComponent } from "@/lib/scoring/deterministic";
 import { isScoreSnapshotCurrent } from "@/lib/scoring/snapshot";
 import { createClient } from "@/lib/supabase/server";
 import type { Json } from "@/types/database";
@@ -72,6 +71,30 @@ const SIGNAL_LABELS: Record<string, string> = {
   booking_unknown: "Booking da verificare",
   business_closed_temporarily: "Attività temporaneamente chiusa",
   business_closed_permanently: "Attività chiusa definitivamente",
+  business_status_unknown: "Stato attività non verificato",
+  reputation_weak: "Reputazione debole",
+  reputation_unknown: "Reputazione non verificata",
+  website_verified_present: "Sito ufficiale verificato",
+  website_not_detected: "Sito non rilevato",
+  website_absence_unconfirmed: "Assenza sito da confermare",
+  website_presence_unknown: "Presenza sito sconosciuta",
+  digital_analysis_missing: "Analisi digitale mancante",
+};
+
+const NEXT_ACTION_LABELS: Record<string, string> = {
+  contact_now: "Contatta ora",
+  manual_verify: "Verifica manualmente",
+  enrich_data: "Arricchisci i dati",
+  ignore: "Non prioritario",
+};
+
+const OFFER_LABELS: Record<string, string> = {
+  siteNew: "Sito nuovo",
+  websiteRedesign: "Restyling",
+  booking: "Booking",
+  automation: "Automazioni",
+  ads: "Ads",
+  branding: "Branding",
 };
 
 const DETAIL_FIELD_LABELS: Record<string, string> = {
@@ -86,8 +109,30 @@ const DETAIL_FIELD_LABELS: Record<string, string> = {
   estimated_value: "Valore stimato",
 };
 
-function scoreComponents(snapshot: Json): ScoreComponent[] {
+type DisplayScoreComponent = { key: string; label: string; score: number; maxScore: number };
+
+function scoringV2(snapshot: Json) {
+  if (!snapshot || Array.isArray(snapshot) || typeof snapshot !== "object") return null;
+  const value = snapshot.scoringV2;
+  return value && !Array.isArray(value) && typeof value === "object" ? value : null;
+}
+
+function scoreComponents(snapshot: Json): DisplayScoreComponent[] {
   if (!snapshot || Array.isArray(snapshot) || typeof snapshot !== "object") return [];
+  const v2 = scoringV2(snapshot);
+  const v2Components = v2?.components;
+  if (v2Components && !Array.isArray(v2Components) && typeof v2Components === "object") {
+    const definitions = [
+      ["businessViability", "Solidità aziendale"],
+      ["contactability", "Contattabilità"],
+      ["commercialSafety", "Sicurezza commerciale"],
+      ["digitalEvidenceCompleteness", "Completezza prove"],
+    ] as const;
+    return definitions.flatMap(([key, label]) => typeof v2Components[key] === "number"
+      ? [{ key, label, score: v2Components[key], maxScore: 100 }]
+      : []);
+  }
+
   const value = snapshot.components;
   if (!Array.isArray(value)) return [];
   return value.flatMap((component) => {
@@ -99,8 +144,22 @@ function scoreComponents(snapshot: Json): ScoreComponent[] {
       || typeof score !== "number"
       || typeof maxScore !== "number"
     ) return [];
-    return [{ key, label, score, maxScore } as ScoreComponent];
+    return [{ key: String(key), label, score, maxScore }];
   });
+}
+
+function offerScores(snapshot: Json) {
+  const value = scoringV2(snapshot)?.offerScores;
+  if (!value || Array.isArray(value) || typeof value !== "object") return [];
+  return Object.entries(value).flatMap(([key, score]) => score === null || typeof score === "number"
+    ? [{ key, label: OFFER_LABELS[key] ?? key, score }]
+    : []);
+}
+
+function nextAction(snapshot: Json) {
+  const recommendation = scoringV2(snapshot)?.recommendation;
+  if (!recommendation || Array.isArray(recommendation) || typeof recommendation !== "object") return null;
+  return typeof recommendation.nextAction === "string" ? recommendation.nextAction : null;
 }
 
 function websiteAssessment(snapshot: Json): WebsiteAssessment | null {
@@ -137,6 +196,8 @@ export default async function LeadDetailPage({ params, searchParams }: LeadDetai
   const latestScore = scoreIsStale ? null : rawLatestScore;
   const recommendedService = services?.find((service) => service.id === latestScore?.recommended_service_id)?.name;
   const components = latestScore ? scoreComponents(latestScore.input_snapshot) : [];
+  const offers = latestScore ? offerScores(latestScore.input_snapshot) : [];
+  const recommendedAction = latestScore ? nextAction(latestScore.input_snapshot) : null;
   const assessment = latestScore ? websiteAssessment(latestScore.input_snapshot) : null;
 
   return (
@@ -223,21 +284,22 @@ export default async function LeadDetailPage({ params, searchParams }: LeadDetai
         <aside className="detail-aside">
           <div className="sticky-panel aside-stack">
             <section className="panel score-panel">
-              <div className="panel-header"><div><p className="eyebrow">Priorità</p><h2>{latestScore?.provider === "openai" ? "Score ibrido" : "Score base"}</h2></div><Gauge size={19} /></div>
+              <div className="panel-header"><div><p className="eyebrow">Priorità</p><h2>Opportunity score</h2></div><Gauge size={19} /></div>
               {latestScore ? (
                 <>
                   <div className="score-summary"><strong>{latestScore.score}</strong><span>/100</span><span className={`score-grade score-grade-${latestScore.grade}`}>{latestScore.grade === "priority" ? "Prioritario" : latestScore.grade === "hot" ? "Buono" : latestScore.grade === "warm" ? "Tiepido" : "Freddo"}</span></div>
                   <p className="score-reasoning">{latestScore.reasoning}</p>
                   {components.length ? <div className="score-components">{components.map((component) => <div className="score-component" key={component.key}><span>{component.label}</span><div className="progress-track" aria-hidden="true"><div style={{ width: `${(component.score / component.maxScore) * 100}%` }} /></div><strong>{component.score}/{component.maxScore}</strong></div>)}</div> : null}
+                  {offers.length ? <div className="offer-score-list">{offers.map((offer) => <div key={offer.key}><span>{offer.label}</span><strong>{offer.score === null ? "Non valutabile" : `${offer.score}/100`}</strong></div>)}</div> : null}
                   <div className="signal-list">{latestScore.positive_signals.map((signal) => <span className="signal signal-positive" key={signal}>{SIGNAL_LABELS[signal] || signal}</span>)}{latestScore.negative_signals.map((signal) => <span className="signal signal-negative" key={signal}>{SIGNAL_LABELS[signal] || signal}</span>)}</div>
-                  <dl className="score-meta"><div><dt>Servizio</dt><dd>{recommendedService || "Da definire"}</dd></div><div><dt>Confidenza</dt><dd>{Math.round((latestScore.confidence ?? 0) * 100)}%</dd></div>{latestScore.ai_score !== null ? <><div><dt>Base</dt><dd>{latestScore.deterministic_score}/100</dd></div><div><dt>OpenAI</dt><dd>{latestScore.ai_score}/100</dd></div></> : null}</dl>
+                  <dl className="score-meta"><div><dt>Servizio</dt><dd>{recommendedService || "Da definire"}</dd></div><div><dt>Confidenza</dt><dd>{Math.round((latestScore.confidence ?? 0) * 100)}%</dd></div>{recommendedAction ? <div><dt>Prossima azione</dt><dd>{NEXT_ACTION_LABELS[recommendedAction] ?? recommendedAction}</dd></div> : null}</dl>
                 </>
               ) : <p className="muted-copy">{scoreIsStale ? "I dati del lead sono cambiati. Ricalcola lo score prima di usarlo." : "Nessuna valutazione disponibile per questo lead."}</p>}
               <form className="score-action" action={scoreLeadDeterministically}>
                 <input type="hidden" name="leadId" value={lead.id} />
                 <SubmitButton className="secondary-button" pendingLabel="Calcolo..."><RefreshCw size={15} /> {latestScore ? "Ricalcola" : "Calcola score"}</SubmitButton>
               </form>
-              {lead.website_url ? <form className="score-action" action={analyzeLeadWithOpenAi}><input type="hidden" name="leadId" value={lead.id} /><SubmitButton pendingLabel="Analisi in corso..."><Sparkles size={15} /> Analizza sito con OpenAI</SubmitButton></form> : <p className="muted-copy">Aggiungi il sito ufficiale per attivare l’analisi OpenAI.</p>}
+              {lead.website_url ? <form className="score-action" action={analyzeLeadWithOpenAi}><input type="hidden" name="leadId" value={lead.id} /><SubmitButton pendingLabel="Interpretazione in corso..."><Sparkles size={15} /> Interpreta evidenze con OpenAI</SubmitButton></form> : <p className="muted-copy">Aggiungi il sito ufficiale per attivare l’interpretazione OpenAI.</p>}
             </section>
 
             <section className="panel">

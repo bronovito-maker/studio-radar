@@ -25,6 +25,13 @@ const SERVICE_LABELS = {
   automazioni: "Automazioni",
 } as const;
 
+const NEXT_ACTION_LABELS = {
+  contact_now: "Contattabile",
+  manual_verify: "Da verificare",
+  enrich_data: "Da arricchire",
+  ignore: "Non prioritario",
+} as const;
+
 export function DiscoverySearch({ configured }: { configured: boolean }) {
   const [state, action, pending] = useActionState(searchPlacesAction, INITIAL_STATE);
 
@@ -79,9 +86,10 @@ export function DiscoverySearch({ configured }: { configured: boolean }) {
                 </div>
                 <div className="discovery-reputation"><strong>{result.rating ? result.rating.toFixed(1) : "—"}</strong><span>{result.reviewCount?.toLocaleString("it-IT") ?? 0} recensioni</span></div>
                 <div className="discovery-score">
-                  <span className={`score-pill score-pill-${result.score.grade}`}>{result.score.score}</span>
+                  <span className={`score-pill score-pill-${result.score.grade}`}>{result.score.opportunityScore}</span>
                   <strong>{gradeLabel(result.score.grade)}</strong>
-                  <span>{SERVICE_LABELS[result.score.recommendedService]}</span>
+                  <span>{result.score.recommendedService ? SERVICE_LABELS[result.score.recommendedService] : "Nessuna offerta"}</span>
+                  <small>{NEXT_ACTION_LABELS[result.score.nextAction]} · confidenza {result.score.confidence}%</small>
                 </div>
                 {!result.duplicateLeadId && state.query ? <ShortlistButton placeId={result.placeId} category={state.query.category} location={state.query.location} region={state.query.region} shortlisted={result.shortlisted} /> : null}
               </article>
@@ -89,7 +97,7 @@ export function DiscoverySearch({ configured }: { configured: boolean }) {
           </div>
           <footer className="google-disclosure">
             <span className="google-maps-attribution" translate="no">Google Maps</span>
-            <details><summary>Informazioni sui risultati</summary><p>L’ordine iniziale dipende dalla pertinenza della ricerca, dalla distanza e dalla rilevanza su Google. Studio Radar applica poi il proprio score deterministico.</p></details>
+            <details><summary>Informazioni sui risultati</summary><p>Google fornisce i risultati della ricerca. Studio Radar li riordina per opportunity score e confidenza, mantenendo separati i dati da verificare.</p></details>
           </footer>
         </section>
       ) : null}

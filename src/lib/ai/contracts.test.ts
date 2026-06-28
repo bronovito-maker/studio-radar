@@ -19,9 +19,6 @@ describe("website AI contracts", () => {
   it("accepts a complete structured assessment", () => {
     expect(websiteAssessmentSchema.safeParse({
       summary: "Presenza digitale attiva con opportunita di conversione.",
-      advisoryScore: 72,
-      recommendedService: "booking-conversione",
-      confidence: 0.81,
       opportunities: [{
         service: "booking-conversione",
         evidence: "Il sito invita a telefonare per prenotare.",
@@ -35,13 +32,15 @@ describe("website AI contracts", () => {
     }).success).toBe(true);
   });
 
-  it("rejects invented service identifiers and invalid confidence", () => {
+  it("rejects invented service identifiers", () => {
     const result = websiteAssessmentSchema.safeParse({
       summary: "Test",
-      advisoryScore: 50,
-      recommendedService: "servizio-inventato",
-      confidence: 2,
-      opportunities: [],
+      opportunities: [{
+        service: "servizio-inventato",
+        evidence: "Test",
+        sourceUrl: "https://example.com",
+        rationale: "Test",
+      }],
       risks: [],
       missingEvidence: [],
       outreachAngle: "Test",

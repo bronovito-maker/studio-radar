@@ -43,7 +43,7 @@ Usare `.env.local` in sviluppo e secret manager in produzione.
 Implementato con eventi persistenti per utente e scope per:
 
 - ricerca Places;
-- scoring AI;
+- interpretazione AI delle evidenze;
 - import CSV;
 - arricchimento candidati;
 - bozze outreach.
