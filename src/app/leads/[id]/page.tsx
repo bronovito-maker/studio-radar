@@ -11,7 +11,7 @@ import { formatCurrency, formatDate, LEAD_STATUSES, SOURCE_LABELS, STATUS_LABELS
 import type { ScoreComponent } from "@/lib/scoring/deterministic";
 import { createClient } from "@/lib/supabase/server";
 import type { Json } from "@/types/database";
-import { analyzeLeadWithOpenAi, recordEmailReplyAction, scoreLeadDeterministically, updateLeadNotes, updateLeadStatus } from "../actions";
+import { analyzeLeadWithOpenAi, assignLeadAction, recordEmailReplyAction, scoreLeadDeterministically, updateLeadNotes, updateLeadStatus } from "../actions";
 
 type LeadDetailPageProps = {
   params: Promise<{ id: string }>;
@@ -37,6 +37,7 @@ const EVENT_LABELS: Record<string, string> = {
   email_hard_bounce: "Email respinta definitivamente",
   email_soft_bounce: "Email respinta temporaneamente",
   email_unsubscribed: "Contatto disiscritto",
+  lead_assigned: "Collaboratore assegnato",
   lead_anonymized: "Dati del lead anonimizzati",
 };
 
@@ -98,13 +99,16 @@ export default async function LeadDetailPage({ params, searchParams }: LeadDetai
   const { id } = await params;
   const feedback = await searchParams;
   const supabase = await createClient();
-  const [{ data: lead, error }, { data: events }, { data: latestScore }, { data: services }, { data: settings }, { data: emails }] = await Promise.all([
+  const [{ data: lead, error }, { data: events }, { data: latestScore }, { data: services }, { data: settings }, { data: emails }, { data: collaborators }] = await Promise.all([
     supabase.from("leads").select("*").eq("id", id).single(),
     supabase.from("lead_events").select("id, event_type, payload, created_at").eq("lead_id", id).order("created_at", { ascending: false }).limit(30),
     supabase.from("lead_scores").select("score, grade, reasoning, positive_signals, negative_signals, deterministic_score, ai_score, confidence, provider, model, prompt_version, recommended_service_id, input_snapshot, created_at").eq("lead_id", id).order("created_at", { ascending: false }).limit(1).maybeSingle(),
     supabase.from("services").select("id, name").eq("is_active", true),
     supabase.from("settings").select("email_enabled, email_sender_email").eq("id", 1).single(),
     supabase.from("email_messages").select("id, sequence_number, status, subject, scheduled_for, sent_at, delivered_at, first_opened_at, clicked_at, error_code").eq("lead_id", id).order("created_at", { ascending: false }).limit(12),
+    viewer.role === "admin"
+      ? supabase.from("profiles").select("id, full_name, email, role").order("full_name")
+      : Promise.resolve({ data: null }),
   ]);
 
   if (error || !lead) notFound();
@@ -216,6 +220,17 @@ export default async function LeadDetailPage({ params, searchParams }: LeadDetai
                 <div><dt>Booking</dt><dd>{lead.has_booking ? "Presente" : "Non verificato"}</dd></div>
               </dl>
             </section>
+            {viewer.role === "admin" ? <section className="panel">
+              <div className="panel-header"><div><p className="eyebrow">Responsabilità</p><h2>Assegnazione</h2></div></div>
+              <form className="status-form" action={assignLeadAction}>
+                <input type="hidden" name="leadId" value={lead.id} />
+                <label className="field"><span>Collaboratore</span><select name="assignedTo" defaultValue={lead.assigned_to ?? ""}>
+                  <option value="">Non assegnato</option>
+                  {collaborators?.map((profile) => <option value={profile.id} key={profile.id}>{profile.full_name || profile.email}{profile.role === "admin" ? " · admin" : ""}</option>)}
+                </select></label>
+                <SubmitButton pendingLabel="Assegnazione...">Salva assegnazione</SubmitButton>
+              </form>
+            </section> : null}
             {viewer.role === "admin" ? <section className="panel danger-panel"><div className="panel-header"><div><p className="eyebrow">Privacy</p><h2>Anonimizzazione</h2></div></div><p className="muted-copy">Rimuove definitivamente contatti, note, analisi e storico dei messaggi. Resta soltanto un evento minimale.</p><AnonymizeLeadForm leadId={lead.id} /></section> : null}
           </div>
         </aside>

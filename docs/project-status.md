@@ -6,7 +6,7 @@ Ultimo aggiornamento: 28 giugno 2026.
 
 Studio Radar ha completato documentazione, fondazioni tecniche, CRM core, import CSV e scoring ibrido. La discovery Google Places e operativa: ricerca live, normalizzazione, score e controllo duplicati sono implementati e verificati con dati reali.
 
-Il CRM e eseguibile e utilizzabile per inserimento manuale o CSV, discovery live, gestione, scoring deterministico, analisi OpenAI del sito, outreach WhatsApp/email ed export. Per attivare l'email in produzione restano la configurazione dei secret e del dominio pubblico.
+Il CRM e eseguibile e utilizzabile per inserimento manuale o CSV, discovery live e notturna, gestione e assegnazione, scoring deterministico, analisi OpenAI del sito, outreach WhatsApp/email ed export. Email, webhook e scheduler sono attivi sul dominio pubblico Render.
 
 ## Avanzamento roadmap
 
@@ -18,7 +18,7 @@ Il CRM e eseguibile e utilizzabile per inserimento manuale o CSV, discovery live
 | 3 - Import e deduplica | Completata | CSV, mapping, preview, deduplica concorrente ed export filtrato |
 | 4 - Discovery e scoring | Completata | Ricerca, shortlist, arricchimento verificabile, conversione lead e scoring completati |
 | 5 - Outreach | Completata | WhatsApp manuale, email Brevo approvata, tracking e follow-up controllati |
-| 6 - Cron controllato | Implementata, non attiva | Endpoint, secret, lock, configurazione e scan runs pronti; mancano secret produzione |
+| 6 - Cron controllato | Completata | Discovery alle 03:00 UTC e follow-up email alle 07:00 UTC con secret in Vault e chiamate `pg_net` |
 | 7 - Hardening | Quasi completata | Rate limit, anonimizzazione e suite E2E completa; resta logging esterno opzionale |
 
 ## Fondazioni verificate
@@ -35,6 +35,7 @@ Il CRM e eseguibile e utilizzabile per inserimento manuale o CSV, discovery live
 - Dashboard alimentata da metriche PostgreSQL reali.
 - Lista lead con ricerca, filtri e paginazione a cursore.
 - Creazione manuale, dettaglio, note e cambio stato implementati.
+- Assegnazione lead ai collaboratori disponibile nella scheda: comando admin-only, controllo database e audit atomico.
 - Mutazioni CRM e relativi audit eseguiti in transazioni PostgreSQL atomiche.
 - Test transazionale autenticato superato con rollback e nessun dato sintetico persistito.
 - Import CSV limitato e validato con mappatura colonne e dettaglio errori per riga.
@@ -63,18 +64,20 @@ Il CRM e eseguibile e utilizzabile per inserimento manuale o CSV, discovery live
 - Tre follow-up schedulabili con stop automatico su bounce, disiscrizione o risposta registrata; flusso SQL verificato con rollback e RLS autenticata.
 - Invio email Brevo attivo con mittente verificato `crmdile007@gmail.com`, webhook autenticato pubblico e follow-up automatici a 3/6/9 giorni.
 - Supabase Cron attivo alle 07:00 UTC: secret cifrato in Vault, chiamata `pg_net` a Render verificata con risposta `200`.
+- Supabase Cron discovery attivo alle 03:00 UTC per Hotel a Bologna, con limite 10, lock concorrente e shortlist condivisa.
+- Collaudo Brevo reale completato verso `bronovito@gmail.com`: consegna, apertura, quattro eventi webhook e audit verificati; tre follow-up creati e annullati senza ulteriori invii.
+- Audit email compatibile con le secret key Supabase moderne e idempotente rispetto agli eventi webhook anticipati.
 - Pagina impostazioni amministrativa disponibile per booking URL e soglia di qualificazione.
 - Rate limit PostgreSQL persistente applicato a Places, import, arricchimento, analisi AI e bozze outreach; verifica limite superata con rollback.
 - Anonimizzazione lead admin-only verificata, incluso il diniego al ruolo collaboratore.
-- Suite Playwright completa: 5 test passano, inclusi accesso admin, diniego collaboratore, protezione anonima e cron senza secret.
-- Endpoint cron implementato con Bearer secret, configurazione amministrativa, limite 10 risultati e lock PostgreSQL concorrente; lo scheduler va creato su Render.
-- Endpoint cron verificato sia senza secret (`401`) sia con secret (`200 disabled`); chiavi server configurate correttamente.
+- Suite Playwright completa: 6 test passano, inclusi accesso admin, diniego collaboratore, protezione anonima, cron e webhook senza secret.
+- Endpoint cron implementato con Bearer secret, configurazione amministrativa, limite 10 risultati e lock PostgreSQL concorrente; scheduler Supabase attivo.
 
-## Auth ancora da chiudere
+## Auth e ruoli
 
-- Applicare guardie UI/server alle funzioni riservate agli admin.
-- Verificare il caso `collaborator` con un secondo account di test.
-- Aggiungere test automatici del flusso login e dei permessi.
+- Guardie UI/server applicate alle funzioni amministrative.
+- Account collaboratore verificato: non accede alle impostazioni e non può assegnare lead.
+- Login, route protette e separazione admin/collaboratore coperti dalla suite E2E e da verifiche SQL transazionali.
 
 ## Milestone CRM core consegnata
 
@@ -86,9 +89,9 @@ Un admin carica un CSV, associa le colonne, vede righe valide e duplicati, confe
 
 ## Prossima milestone dimostrabile
 
-Un amministratore verifica i permessi di un collaboratore e il percorso completo viene coperto da test E2E: login, discovery, conversione, scoring e outreach.
+Completare il percorso E2E applicativo su discovery, conversione, scoring, assegnazione e outreach usando fixture isolate.
 
 ## Blocchi esterni non urgenti
 
-- Dominio di produzione, necessario prima del deploy pubblico.
 - Booking URL definitivo, configurabile dalla pagina Impostazioni.
+- Logging esterno e alerting operativo, opzionali per l'MVP.

@@ -38,7 +38,8 @@ const placeSchema = z.object({
   addressComponents: z.array(z.object({
     longText: z.string(),
     shortText: z.string().optional(),
-    types: z.array(z.string()),
+    // Google can omit `types` on individual address components.
+    types: z.array(z.string()).default([]),
     languageCode: z.string().optional(),
   })).optional(),
   nationalPhoneNumber: z.string().optional(),

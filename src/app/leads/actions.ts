@@ -130,6 +130,32 @@ export async function updateLeadNotes(formData: FormData) {
   redirect(withMessage(`/leads/${idResult.data}`, "success", "Nota salvata"));
 }
 
+export async function assignLeadAction(formData: FormData) {
+  await requireAdmin();
+  const parsed = z.object({
+    leadId: z.uuid(),
+    assignedTo: z.union([z.uuid(), z.literal("")]),
+  }).safeParse({
+    leadId: value(formData, "leadId"),
+    assignedTo: value(formData, "assignedTo"),
+  });
+
+  if (!parsed.success) redirect(withMessage("/leads", "error", "Assegnazione non valida"));
+
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("assign_lead", {
+    p_lead_id: parsed.data.leadId,
+    p_assigned_to: parsed.data.assignedTo || null,
+  });
+  if (error) {
+    redirect(withMessage(`/leads/${parsed.data.leadId}`, "error", "Collaboratore non assegnato. Riprova."));
+  }
+
+  revalidatePath("/leads");
+  revalidatePath(`/leads/${parsed.data.leadId}`);
+  redirect(withMessage(`/leads/${parsed.data.leadId}`, "success", parsed.data.assignedTo ? "Lead assegnato" : "Assegnazione rimossa"));
+}
+
 export async function scoreLeadDeterministically(formData: FormData) {
   const idResult = z.uuid().safeParse(value(formData, "leadId"));
   if (!idResult.success) redirect(withMessage("/leads", "error", "Lead non valido"));

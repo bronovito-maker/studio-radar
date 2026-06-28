@@ -541,6 +541,10 @@ export type Database = {
         };
         Returns: undefined;
       };
+      assign_lead: {
+        Args: { p_lead_id: string; p_assigned_to?: string | null };
+        Returns: undefined;
+      };
       consume_rate_limit: {
         Args: { p_scope: string };
         Returns: boolean;
