@@ -58,14 +58,10 @@ Dashboard e CRM core usano Server Components, Server Actions e funzioni PostgreS
 
 L'import CSV viene analizzato e normalizzato server side. Il batch conserva mapping e anteprima; la conferma ricontrolla i duplicati e crea lead e audit nella stessa transazione.
 
-## API interne previste per le integrazioni
+## API interne implementate
 
 - `GET /api/leads/export`
-- `POST /api/search`
-- `POST /api/outreach/mark-sent`
-- `GET /api/settings`
-- `PATCH /api/settings`
-- `GET /api/cron/scan`
+- `GET /api/cron/discovery`
 
 Tutte le API sono protette da autenticazione o secret dedicato nel caso del cron.
 
@@ -80,6 +76,9 @@ Regole:
 - retry controllato;
 - log esplicito di successo/fallimento;
 - nessun invio outreach automatico.
+- shortlist persistente composta soltanto da Place ID e contesto interno;
+- configurazione categoria/zona dalla pagina Impostazioni;
+- autorizzazione Bearer tramite `CRON_SECRET` e client Supabase server-only.
 
 ## Osservabilita
 

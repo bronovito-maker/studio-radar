@@ -15,7 +15,7 @@ Questo file descrive le variabili previste. I valori reali non vanno committati.
 |---|---|---|
 | `NEXT_PUBLIC_SUPABASE_URL` | si | Pubblica |
 | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | si | Pubblica, protetta da RLS |
-| `SUPABASE_SECRET_KEY` | futuro server | Mai nel client; solo per operazioni amministrative |
+| `SUPABASE_SECRET_KEY` | si per cron | Mai nel client; usata solo dalla route cron server-side |
 
 ## Cron
 

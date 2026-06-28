@@ -23,7 +23,7 @@ export default async function SearchPage() {
       .limit(8),
     supabase
       .from("lead_candidates")
-      .select("id, google_place_id, search_category, search_location, search_region, created_at")
+      .select("id, google_place_id, search_category, search_location, search_region, origin, created_at")
       .order("created_at", { ascending: false })
       .limit(10),
   ]);
@@ -53,7 +53,7 @@ export default async function SearchPage() {
               <div className="candidate-main">
                 <strong>{place?.displayName.text || "Attività non disponibile"}</strong>
                 <span>{place?.formattedAddress || `${candidate.search_location}, ${candidate.search_region}`}</span>
-                <small>{candidate.search_category} · salvato {formatDate(candidate.created_at)}</small>
+                <small>{candidate.search_category} · {candidate.origin === "cron" ? "scoperta automatica" : "salvato manualmente"} · {formatDate(candidate.created_at)}</small>
                 {place?.attributions?.length ? <span className="place-attributions">{place.attributions.map((attribution, index) => attribution.providerUri ? <a href={attribution.providerUri} target="_blank" rel="noreferrer" key={`${attribution.provider}-${index}`}>{attribution.provider}</a> : <span key={`${attribution.provider}-${index}`}>{attribution.provider}</span>)}</span> : null}
               </div>
               <Link className="icon-button" href={`/search/candidates/${candidate.id}`} title="Verifica e crea lead" aria-label="Verifica e crea lead"><ChevronRight size={16} /></Link>

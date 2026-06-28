@@ -33,6 +33,7 @@ Costruire uno strumento interno che aiuti a:
 - [Variabili ambiente](docs/env-vars.md)
 - [Setup Supabase](docs/supabase-setup.md)
 - [Stato del progetto](docs/project-status.md)
+- [Checklist produzione](docs/production-checklist.md)
 - [Domande aperte](docs/open-questions.md)
 - [Decisioni architetturali](docs/adr)
 
@@ -46,6 +47,6 @@ Costruire uno strumento interno che aiuti a:
 
 ## Stato
 
-Documentazione, fondazioni tecniche, CRM core, import CSV e score deterministico completati. Discovery e shortlist Google Places sono operative; OpenAI e configurato come livello consultivo. Il prossimo blocco e l'arricchimento verificato dal sito ufficiale prima della creazione del lead.
+Il flusso MVP e implementato: discovery, shortlist, arricchimento dal sito ufficiale, CRM, scoring ibrido, outreach manuale e automazione notturna controllata. Restano l'attivazione delle configurazioni di produzione, il collaudo autenticato con account E2E dedicati e il deploy pubblico.
 
 Il dettaglio verificabile, i lavori aperti e la prossima milestone sono tracciati nello [stato del progetto](docs/project-status.md).

@@ -22,6 +22,12 @@ test("le route operative non espongono dati senza sessione", async ({ page }) =>
   }
 });
 
+test("il cron rifiuta richieste senza secret", async ({ request }) => {
+  const response = await request.get("/api/cron/discovery");
+  expect(response.status()).toBe(401);
+  await expect(response.json()).resolves.toEqual({ error: "UNAUTHORIZED" });
+});
+
 test.describe("sessione admin", () => {
   test.skip(!process.env.E2E_ADMIN_EMAIL || !process.env.E2E_ADMIN_PASSWORD, "Credenziali E2E admin non configurate");
 

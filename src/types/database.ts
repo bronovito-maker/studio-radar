@@ -76,6 +76,9 @@ export type Database = {
           default_score_threshold: number;
           cron_enabled: boolean;
           cron_schedule: string;
+          cron_category: string;
+          cron_location: string;
+          cron_region: string;
           notion_sync_enabled: boolean;
           sheets_sync_enabled: boolean;
           created_at: string;
@@ -87,6 +90,9 @@ export type Database = {
           default_score_threshold?: number;
           cron_enabled?: boolean;
           cron_schedule?: string;
+          cron_category?: string;
+          cron_location?: string;
+          cron_region?: string;
           notion_sync_enabled?: boolean;
           sheets_sync_enabled?: boolean;
           created_at?: string;
@@ -272,6 +278,7 @@ export type Database = {
           search_category: string;
           search_location: string;
           search_region: string;
+          origin: string;
           created_by: string;
           created_at: string;
           updated_at: string;
@@ -282,6 +289,7 @@ export type Database = {
           search_category: string;
           search_location: string;
           search_region: string;
+          origin?: string;
           created_by: string;
           created_at?: string;
           updated_at?: string;

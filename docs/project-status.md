@@ -18,7 +18,7 @@ Il CRM e eseguibile e utilizzabile per inserimento manuale o CSV, discovery live
 | 3 - Import e deduplica | Completata | CSV, mapping, preview, deduplica concorrente ed export filtrato |
 | 4 - Discovery e scoring | Completata | Ricerca, shortlist, arricchimento verificabile, conversione lead e scoring completati |
 | 5 - Outreach manuale | Completata | Bozza OpenAI modificabile, fallback, `wa.me`, booking globale e audit |
-| 6 - Cron controllato | Non iniziata | Endpoint protetto, lock e scan runs |
+| 6 - Cron controllato | Implementata, non attiva | Endpoint, secret, lock, configurazione e scan runs pronti; mancano secret produzione |
 | 7 - Hardening | Parziale | Rate limit, anonimizzazione e test anonimi completati; restano E2E autenticati e logging esterno |
 
 ## Fondazioni verificate
@@ -63,6 +63,8 @@ Il CRM e eseguibile e utilizzabile per inserimento manuale o CSV, discovery live
 - Rate limit PostgreSQL persistente applicato a Places, import, arricchimento, analisi AI e bozze outreach; verifica limite superata con rollback.
 - Anonimizzazione lead admin-only verificata, incluso il diniego al ruolo collaboratore.
 - Suite Playwright aggiunta: redirect e protezione route anonime passano; test admin/collaborator pronti e condizionati a credenziali E2E dedicate.
+- Cron Vercel implementato alle 03:00 UTC con Bearer secret, configurazione amministrativa, limite 10 risultati e lock PostgreSQL concorrente.
+- Endpoint cron anonimo verificato con `401`; esecuzione live sospesa finche `SUPABASE_SECRET_KEY` e `CRON_SECRET` non vengono configurati.
 
 ## Auth ancora da chiudere
 

@@ -32,6 +32,14 @@
 
 In produzione applicare anche una restrizione adatta al backend e monitorare quota e costi.
 
+### Discovery notturna
+
+- Vercel richiama `GET /api/cron/discovery` alle 03:00 UTC.
+- La route richiede `Authorization: Bearer <CRON_SECRET>`.
+- Categoria, citta e regione sono configurabili dagli admin.
+- Ogni run richiede al massimo 10 risultati e salva in shortlist soltanto Place ID nuovi.
+- Un indice parziale impedisce due run cron contemporanee; run bloccate da oltre 30 minuti vengono chiuse come fallite.
+
 ## OpenAI
 
 ### Uso MVP
