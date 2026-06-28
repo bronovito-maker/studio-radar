@@ -22,6 +22,7 @@ const EVENT_LABELS: Record<string, string> = {
   notes_updated: "Note aggiornate",
   deterministic_score_created: "Score deterministico calcolato",
   hybrid_score_created: "Score ibrido OpenAI calcolato",
+  candidate_converted: "Candidato verificato e aggiunto al CRM",
 };
 
 const SIGNAL_LABELS: Record<string, string> = {

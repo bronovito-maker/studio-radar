@@ -2,6 +2,8 @@
 
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
+import { AiAnalysisError, enrichCandidateFromOfficialWebsite } from "@/lib/ai/openai";
 import { requireViewer } from "@/lib/auth";
 import { findExistingLeadKeys } from "@/lib/leads/deduplication";
 import {
@@ -10,7 +12,7 @@ import {
   normalizeWebsite,
 } from "@/lib/leads/normalization";
 import { DISCOVERY_CATEGORIES } from "@/lib/places/categories";
-import { isPlacesConfigured, PlacesError, searchGooglePlaces, type GooglePlace } from "@/lib/places/client";
+import { getGooglePlaceSummary, isPlacesConfigured, PlacesError, searchGooglePlaces, type GooglePlace } from "@/lib/places/client";
 import { scoreLead, type DeterministicScoreResult } from "@/lib/scoring/deterministic";
 import { createClient } from "@/lib/supabase/server";
 
@@ -48,6 +50,24 @@ export type DiscoverySearchState = {
 };
 
 export type ShortlistState = { status: "idle" | "saved" | "error"; message?: string };
+export type CandidateEnrichmentState = {
+  status: "idle" | "ready" | "error";
+  message?: string;
+  data?: {
+    businessName: string;
+    category: string;
+    city: string;
+    region: string;
+    phone: string;
+    email: string;
+    address: string;
+    websiteUrl: string;
+    hasBooking: boolean;
+    confidence: number;
+    missingEvidence: string[];
+    sources: string[];
+  };
+};
 
 const shortlistSchema = z.object({
   placeId: z.string().trim().min(1).max(2048),
@@ -56,9 +76,27 @@ const shortlistSchema = z.object({
   region: z.enum(["Emilia-Romagna", "Toscana", "Lombardia"]),
 });
 
+const confirmCandidateSchema = z.object({
+  candidateId: z.uuid(),
+  businessName: z.string().trim().min(2, "Inserisci il nome dell'attività").max(200),
+  category: z.string().trim().max(200).transform((entry) => entry || null),
+  city: z.string().trim().max(120).transform((entry) => entry || null),
+  region: z.string().trim().max(120).transform((entry) => entry || null),
+  phone: z.string().trim().max(60).transform((entry) => entry || null),
+  email: z.string().trim().max(254).refine((entry) => !entry || z.email().safeParse(entry).success, "Email non valida").transform((entry) => entry || null),
+  address: z.string().trim().max(300).transform((entry) => entry || null),
+  websiteUrl: z.string().trim().max(2048).refine((entry) => !entry || z.url().safeParse(entry).success, "Sito web non valido").transform((entry) => entry || null),
+  hasBooking: z.boolean(),
+  estimatedValue: z.coerce.number().min(0).max(10_000_000),
+});
+
 function value(formData: FormData, key: string) {
   const candidate = formData.get(key);
   return typeof candidate === "string" ? candidate : "";
+}
+
+function withMessage(path: string, type: "error" | "success", message: string) {
+  return `${path}${path.includes("?") ? "&" : "?"}${type}=${encodeURIComponent(message)}`;
 }
 
 function addressPart(place: GooglePlace, types: string[]) {
@@ -256,4 +294,111 @@ export async function removeCandidateAction(formData: FormData) {
   const { error } = await supabase.from("lead_candidates").delete().eq("id", id.data);
   if (error) console.error("Candidate removal failed", { code: error.code });
   revalidatePath("/search");
+}
+
+export async function enrichCandidateAction(
+  _previousState: CandidateEnrichmentState,
+  formData: FormData,
+): Promise<CandidateEnrichmentState> {
+  const viewer = await requireViewer();
+  const candidateId = z.uuid().safeParse(value(formData, "candidateId"));
+  if (!candidateId.success) return { status: "error", message: "Candidato non valido." };
+
+  const supabase = await createClient();
+  const { data: candidate, error } = await supabase
+    .from("lead_candidates")
+    .select("id, google_place_id, search_category, search_location, search_region, created_by")
+    .eq("id", candidateId.data)
+    .single();
+  if (error || !candidate) return { status: "error", message: "Candidato non disponibile." };
+  if (candidate.created_by !== viewer.id && viewer.role !== "admin") {
+    return { status: "error", message: "Solo chi ha salvato il candidato o un admin può convertirlo." };
+  }
+
+  try {
+    const place = await getGooglePlaceSummary(candidate.google_place_id);
+    if (!place?.websiteUri) {
+      return { status: "error", message: "Questo candidato non ha un sito ufficiale verificabile. Compila i dati manualmente." };
+    }
+    const result = await enrichCandidateFromOfficialWebsite({
+      websiteUrl: place.websiteUri,
+      searchCategory: candidate.search_category,
+      searchLocation: candidate.search_location,
+      searchRegion: candidate.search_region,
+    });
+    return {
+      status: "ready",
+      data: {
+        businessName: result.enrichment.businessName,
+        category: result.enrichment.category,
+        city: result.enrichment.city ?? "",
+        region: result.enrichment.region ?? candidate.search_region,
+        phone: result.enrichment.phone ?? "",
+        email: result.enrichment.email ?? "",
+        address: result.enrichment.address ?? "",
+        websiteUrl: result.enrichment.websiteUrl,
+        hasBooking: result.enrichment.hasBooking === true,
+        confidence: result.enrichment.confidence,
+        missingEvidence: result.enrichment.missingEvidence,
+        sources: result.enrichment.sources,
+      },
+    };
+  } catch (analysisError) {
+    const message = analysisError instanceof AiAnalysisError && analysisError.code === "NOT_CONFIGURED"
+      ? "OpenAI non è configurato sul server. Compila i dati manualmente."
+      : analysisError instanceof PlacesError && analysisError.code === "QUOTA"
+        ? "Quota Google Places esaurita. Riprova più tardi."
+        : "Non è stato possibile verificare il sito. Puoi compilare i dati manualmente.";
+    return { status: "error", message };
+  }
+}
+
+export async function confirmCandidateAction(formData: FormData) {
+  await requireViewer();
+  const candidateId = value(formData, "candidateId");
+  const parsed = confirmCandidateSchema.safeParse({
+    candidateId,
+    businessName: value(formData, "businessName"),
+    category: value(formData, "category"),
+    city: value(formData, "city"),
+    region: value(formData, "region"),
+    phone: value(formData, "phone"),
+    email: value(formData, "email"),
+    address: value(formData, "address"),
+    websiteUrl: value(formData, "websiteUrl"),
+    hasBooking: formData.get("hasBooking") === "on",
+    estimatedValue: value(formData, "estimatedValue") || "0",
+  });
+  if (!parsed.success) {
+    redirect(withMessage(`/search/candidates/${candidateId}`, "error", parsed.error.issues[0]?.message ?? "Dati non validi"));
+  }
+
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("confirm_candidate_to_lead", {
+    p_candidate_id: parsed.data.candidateId,
+    p_business_name: parsed.data.businessName,
+    p_category: parsed.data.category,
+    p_city: parsed.data.city,
+    p_region: parsed.data.region,
+    p_phone: parsed.data.phone,
+    p_email: parsed.data.email,
+    p_address: parsed.data.address,
+    p_website_url: parsed.data.websiteUrl,
+    p_has_booking: parsed.data.hasBooking,
+    p_estimated_value: parsed.data.estimatedValue,
+  });
+  if (error || !data || Array.isArray(data) || typeof data !== "object") {
+    redirect(withMessage(`/search/candidates/${parsed.data.candidateId}`, "error", "Creazione lead non riuscita."));
+  }
+
+  const leadId = typeof data.lead_id === "string" ? data.lead_id : null;
+  if (!leadId) {
+    redirect(withMessage(`/search/candidates/${parsed.data.candidateId}`, "error", "Risposta di conferma non valida."));
+  }
+
+  revalidatePath("/");
+  revalidatePath("/leads");
+  revalidatePath("/search");
+  const message = data.status === "duplicate" ? "Il candidato era già presente nel CRM" : "Candidato verificato e aggiunto al CRM";
+  redirect(withMessage(`/leads/${leadId}`, "success", message));
 }

@@ -3,6 +3,8 @@ import "server-only";
 import OpenAI from "openai";
 import { zodTextFormat } from "openai/helpers/zod";
 import {
+  candidateEnrichmentSchema,
+  CANDIDATE_ENRICHMENT_VERSION,
   normalizeWebsiteEvidence,
   WEBSITE_ASSESSMENT_VERSION,
   websiteAssessmentSchema,
@@ -149,6 +151,89 @@ export async function analyzeWebsiteDomainWithOpenAi(input: WebsiteDomainInput) 
       promptVersion: WEBSITE_ASSESSMENT_VERSION,
       responseId: response.id,
       domain,
+    };
+  } catch (error) {
+    if (error instanceof AiAnalysisError) throw error;
+    throw new AiAnalysisError("REQUEST_FAILED");
+  }
+}
+
+export async function enrichCandidateFromOfficialWebsite(input: {
+  websiteUrl: string;
+  searchCategory: string;
+  searchLocation: string;
+  searchRegion: string;
+}) {
+  const apiKey = process.env.OPENAI_API_KEY?.trim();
+  if (!apiKey) throw new AiAnalysisError("NOT_CONFIGURED");
+
+  let domain: string;
+  try {
+    domain = officialWebsiteDomain(input.websiteUrl);
+  } catch {
+    throw new AiAnalysisError("INVALID_OUTPUT");
+  }
+
+  const model = process.env.AI_SCORING_MODEL?.trim() || DEFAULT_OPENAI_MODEL;
+  const client = new OpenAI({ apiKey, timeout: 35_000, maxRetries: 1 });
+
+  try {
+    const response = await client.responses.parse({
+      model,
+      store: false,
+      reasoning: { effort: "low" },
+      max_output_tokens: 1_800,
+      tools: [{
+        type: "web_search",
+        filters: { allowed_domains: [domain] },
+        search_context_size: "low",
+      }],
+      tool_choice: "required",
+      input: [
+        {
+          role: "system",
+          content: [
+            "Estrai un profilo aziendale verificabile per il CRM Studio Radar.",
+            `Consulta esclusivamente il dominio ufficiale ${domain} e le sue sottopagine.`,
+            "Non usare Google Maps, directory, social, recensioni o conoscenze pregresse.",
+            "Telefono, email, indirizzo e booking devono essere riportati solo se visibili sul sito ufficiale.",
+            "Usa null per ogni dato non verificato e dichiaralo in missingEvidence.",
+            "Ogni URL in sources deve appartenere al dominio consentito.",
+            "La categoria, la localita e la regione di ricerca sono solo contesto: correggile se il sito ufficiale mostra dati diversi.",
+          ].join(" "),
+        },
+        {
+          role: "user",
+          content: JSON.stringify({
+            officialWebsite: input.websiteUrl,
+            searchContext: {
+              category: input.searchCategory,
+              location: input.searchLocation,
+              region: input.searchRegion,
+            },
+          }),
+        },
+      ],
+      text: {
+        format: zodTextFormat(candidateEnrichmentSchema, "candidate_enrichment"),
+        verbosity: "low",
+      },
+    });
+
+    const enrichment = response.output_parsed;
+    if (!enrichment || !enrichment.sources.every((source) => sourceBelongsToDomain(source, domain))) {
+      throw new AiAnalysisError("INVALID_OUTPUT");
+    }
+    if (!sourceBelongsToDomain(enrichment.websiteUrl, domain)) {
+      throw new AiAnalysisError("INVALID_OUTPUT");
+    }
+
+    return {
+      enrichment,
+      domain,
+      model,
+      promptVersion: CANDIDATE_ENRICHMENT_VERSION,
+      responseId: response.id,
     };
   } catch (error) {
     if (error instanceof AiAnalysisError) throw error;

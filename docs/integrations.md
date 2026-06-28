@@ -21,7 +21,7 @@
 - Mostrare attribuzione Google Maps e attribuzioni di terze parti insieme ai risultati.
 - Non persistere i contenuti Places restituiti dalla ricerca. I risultati sono effimeri; il Place ID puo essere conservato a tempo indeterminato.
 - Verificare e aggiornare i Place ID con piu di 12 mesi durante il futuro processo periodico di manutenzione.
-- Prima dell'import permanente, definire quali dati possono essere acquisiti da una fonte indipendente o con un trattamento compatibile con i termini applicabili.
+- Prima della persistenza, usare il sito ufficiale o l'inserimento manuale come fonte dei dati CRM; non copiare automaticamente i contenuti Places.
 
 ### Attivazione locale
 

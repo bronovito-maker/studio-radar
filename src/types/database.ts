@@ -389,6 +389,22 @@ export type Database = {
         };
         Returns: string;
       };
+      confirm_candidate_to_lead: {
+        Args: {
+          p_candidate_id: string;
+          p_business_name: string;
+          p_city?: string | null;
+          p_region?: string | null;
+          p_category?: string | null;
+          p_phone?: string | null;
+          p_email?: string | null;
+          p_website_url?: string | null;
+          p_address?: string | null;
+          p_has_booking?: boolean;
+          p_estimated_value?: number;
+        };
+        Returns: Json;
+      };
     };
     Enums: {
       lead_source: "manual" | "csv" | "google_places";

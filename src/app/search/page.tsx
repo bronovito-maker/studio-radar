@@ -1,4 +1,5 @@
-import { Bookmark, Clock3, ExternalLink, Search, Trash2 } from "lucide-react";
+import { Bookmark, ChevronRight, Clock3, ExternalLink, Search, Trash2 } from "lucide-react";
+import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
 import { DiscoverySearch } from "@/components/discovery-search";
 import { requireViewer } from "@/lib/auth";
@@ -55,6 +56,7 @@ export default async function SearchPage() {
                 <small>{candidate.search_category} · salvato {formatDate(candidate.created_at)}</small>
                 {place?.attributions?.length ? <span className="place-attributions">{place.attributions.map((attribution, index) => attribution.providerUri ? <a href={attribution.providerUri} target="_blank" rel="noreferrer" key={`${attribution.provider}-${index}`}>{attribution.provider}</a> : <span key={`${attribution.provider}-${index}`}>{attribution.provider}</span>)}</span> : null}
               </div>
+              <Link className="icon-button" href={`/search/candidates/${candidate.id}`} title="Verifica e crea lead" aria-label="Verifica e crea lead"><ChevronRight size={16} /></Link>
               <a className="icon-button" href={mapsUrl} target="_blank" rel="noreferrer" title="Apri in Google Maps" aria-label="Apri in Google Maps"><ExternalLink size={16} /></a>
               <form action={removeCandidateAction}><input type="hidden" name="candidateId" value={candidate.id} /><button className="icon-button danger-icon" type="submit" title="Rimuovi dalla shortlist" aria-label="Rimuovi dalla shortlist"><Trash2 size={16} /></button></form>
             </article>

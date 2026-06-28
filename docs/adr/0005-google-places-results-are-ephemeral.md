@@ -16,8 +16,8 @@ La discovery usa Places API (New) per trovare attivita locali. I contenuti resti
 - `lead_candidates` conserva il Place ID selezionato e il contesto interno digitato dall'utente; i dettagli vengono richiesti nuovamente a Google quando la shortlist viene visualizzata.
 - Non viene salvato uno snapshot dei contenuti Places.
 - La UI mostra Google Maps e le eventuali attribuzioni di terze parti.
-- L'import permanente dei dati del risultato resta escluso finche non viene definita una fonte indipendente o una modalita compatibile con i termini applicabili.
+- L'import permanente dei contenuti Places resta escluso. Il candidato puo diventare lead usando dati verificati dal sito ufficiale o inseriti manualmente, come definito nell'ADR 0006.
 
 ## Conseguenze
 
-La discovery puo essere provata e usata per valutare opportunita senza introdurre un archivio non conforme. Il passaggio da risultato a lead richiedera una decisione esplicita sulla provenienza dei dati e sulla compliance, invece di essere aggiunto implicitamente.
+La discovery puo essere usata senza introdurre un archivio dei contenuti Places. Il passaggio da risultato a lead mantiene una provenienza esplicita e una conferma umana.

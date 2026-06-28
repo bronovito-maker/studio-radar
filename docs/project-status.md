@@ -16,7 +16,7 @@ Il CRM e eseguibile e utilizzabile per inserimento manuale o CSV, discovery live
 | 1 - Fondazioni tecniche | Completata | Next.js, TypeScript strict, Supabase, migrazioni, RLS, Auth SSR e layout |
 | 2 - CRM core | Completata | Dashboard reale, lista e dettaglio lead, inserimento, stati, note e audit |
 | 3 - Import e deduplica | Completata | CSV, mapping, preview, deduplica concorrente ed export filtrato |
-| 4 - Discovery e scoring | In corso | Score deterministico e ibrido OpenAI, ricerca live e shortlist completati; resta l'arricchimento pre-creazione |
+| 4 - Discovery e scoring | Completata | Ricerca, shortlist, arricchimento verificabile, conversione lead e scoring completati |
 | 5 - Outreach manuale | Non iniziata | Template WhatsApp, link `wa.me` e timeline |
 | 6 - Cron controllato | Non iniziata | Endpoint protetto, lock e scan runs |
 | 7 - Hardening | Parziale | RLS e controlli base presenti; test E2E, rate limit e logging da completare |
@@ -55,6 +55,8 @@ Il CRM e eseguibile e utilizzabile per inserimento manuale o CSV, discovery live
 - Contratto AI versionato e coperto da test; chiave, Structured Output e web search con `gpt-5.4-mini` verificati con chiamate sintetiche reali.
 - Analisi manuale disponibile nella scheda lead: ricerca limitata al dominio ufficiale, fonti obbligatorie validate server side e risultato salvato atomicamente.
 - RPC ibrida verificata con utente autenticato e rollback completo; nessun dato sintetico persistito.
+- Flusso shortlist → verifica → lead completato: OpenAI estrae dati solo dal sito ufficiale, l'utente conferma e la RPC crea il lead con deduplica e audit atomici.
+- Conversione candidato verificata sui casi creazione e duplicato con rollback; nessun dato sintetico persistito.
 
 ## Auth ancora da chiudere
 
@@ -72,7 +74,7 @@ Un admin carica un CSV, associa le colonne, vede righe valide e duplicati, confe
 
 ## Prossima milestone dimostrabile
 
-Un admin seleziona un candidato in shortlist, avvia l'arricchimento dal sito ufficiale e conferma i dati persistenti prima della creazione del lead. I contenuti Places non vengono copiati automaticamente nel CRM.
+Un operatore apre un lead qualificato, genera una bozza outreach consulenziale, la modifica e apre WhatsApp con il booking link globale; il CRM registra il contatto nella timeline.
 
 ## Blocchi esterni non urgenti
 

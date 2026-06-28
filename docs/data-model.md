@@ -40,8 +40,8 @@ Profilo applicativo collegato a Supabase Auth.
 | website_url | text | |
 | address | text | |
 | category | text | |
-| rating | numeric | Da Places |
-| review_count | int | Da Places |
+| rating | numeric | Solo se acquisito da una fonte persistibile |
+| review_count | int | Solo se acquisito da una fonte persistibile |
 | has_website | boolean | Derivato |
 | has_booking | boolean | Derivato/manuale |
 | estimated_value | numeric | Valore potenziale |
@@ -133,7 +133,7 @@ Singola riga applicativa.
 |---|---|---|
 | id | int | Sempre `1` |
 | booking_url | text | Link Calendly o alternativa |
-| default_score_threshold | int | Default 50 |
+| default_score_threshold | int | Corrente 65 |
 | cron_enabled | boolean | |
 | cron_schedule | text | Espressione UTC |
 | notion_sync_enabled | boolean | Futuro |

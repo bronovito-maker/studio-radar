@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { normalizeWebsiteEvidence, websiteAssessmentSchema } from "./contracts";
+import { candidateEnrichmentSchema, normalizeWebsiteEvidence, websiteAssessmentSchema } from "./contracts";
 
 describe("website AI contracts", () => {
   it("normalizes and bounds website evidence", () => {
@@ -48,5 +48,39 @@ describe("website AI contracts", () => {
       sources: ["https://example.com"],
     });
     expect(result.success).toBe(false);
+  });
+
+  it("accepts a candidate profile with explicit missing fields and official sources", () => {
+    expect(candidateEnrichmentSchema.safeParse({
+      businessName: "Studio Radar",
+      category: "Agenzia web",
+      city: "Rimini",
+      region: "Emilia-Romagna",
+      phone: null,
+      email: null,
+      address: null,
+      websiteUrl: "https://example.com",
+      hasBooking: null,
+      confidence: 0.72,
+      missingEvidence: ["Telefono", "Email"],
+      sources: ["https://example.com/contatti"],
+    }).success).toBe(true);
+  });
+
+  it("rejects malformed candidate contact data", () => {
+    expect(candidateEnrichmentSchema.safeParse({
+      businessName: "Studio Radar",
+      category: "Agenzia web",
+      city: null,
+      region: null,
+      phone: null,
+      email: "non-una-email",
+      address: null,
+      websiteUrl: "https://example.com",
+      hasBooking: null,
+      confidence: 0.7,
+      missingEvidence: [],
+      sources: ["https://example.com"],
+    }).success).toBe(false);
   });
 });

@@ -15,7 +15,7 @@ Queste decisioni non bloccano la documentazione, ma vanno chiuse prima o durante
 
 ## Scoring
 
-- Soglia iniziale confermata a 50, da tarare sulla qualita effettiva.
+- Soglia iniziale impostata a 65, da tarare sulla qualita effettiva.
 - Quanto peso dare a categoria, regione, recensioni, sito assente/presente?
 - Modello OpenAI premium da valutare dopo gli eval: mantenere solo `gpt-5.4-mini` o usare `gpt-5.5` per i casi complessi.
 

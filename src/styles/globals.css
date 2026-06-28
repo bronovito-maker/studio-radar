@@ -1864,7 +1864,7 @@ h2 {
 
 .candidate-row {
   display: grid;
-  grid-template-columns: 36px minmax(0, 1fr) 40px 40px;
+  grid-template-columns: 36px minmax(0, 1fr) 40px 40px 40px;
   align-items: center;
   gap: 12px;
   min-height: 78px;
@@ -1911,6 +1911,107 @@ h2 {
 
 .candidate-empty {
   min-height: 180px;
+}
+
+.candidate-review-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(240px, 320px);
+  align-items: start;
+  gap: 14px;
+  margin-top: 28px;
+}
+
+.candidate-review-main,
+.candidate-live-summary {
+  display: grid;
+  gap: 18px;
+}
+
+.candidate-enrichment-stack,
+.candidate-confirm-form {
+  display: grid;
+  gap: 16px;
+}
+
+.candidate-ai-action,
+.candidate-ai-result {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.candidate-ai-action > div,
+.candidate-ai-result > div {
+  display: grid;
+  gap: 3px;
+}
+
+.candidate-ai-action span,
+.candidate-ai-result span {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.candidate-ai-result {
+  justify-content: start;
+  border-color: var(--success);
+  background: var(--success-soft);
+  color: var(--success);
+}
+
+.field-span {
+  grid-column: 1 / -1;
+}
+
+.check-field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  align-self: end;
+  min-height: 42px;
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.candidate-sources {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.candidate-sources a,
+.candidate-live-summary > a,
+.candidate-live-summary > p {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.candidate-sources a {
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 5px 7px;
+}
+
+.candidate-live-summary {
+  position: sticky;
+  top: 20px;
+}
+
+.candidate-live-summary > strong {
+  font-size: 17px;
+}
+
+.candidate-live-summary > p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.5;
 }
 
 .scan-history {
@@ -2148,6 +2249,19 @@ h2 {
   .discovery-fields,
   .discovery-row {
     grid-template-columns: 1fr;
+  }
+
+  .candidate-review-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .candidate-live-summary {
+    position: static;
+  }
+
+  .candidate-ai-action {
+    align-items: stretch;
+    flex-direction: column;
   }
 
   .discovery-row .shortlist-action {

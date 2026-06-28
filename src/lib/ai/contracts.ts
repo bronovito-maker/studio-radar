@@ -1,6 +1,8 @@
 import { z } from "zod";
 
 export const WEBSITE_ASSESSMENT_VERSION = "website-assessment-v2026.06.28-2";
+export const CANDIDATE_ENRICHMENT_VERSION = "candidate-enrichment-v2026.06.28-1";
+const httpUrlSchema = z.string().max(2048).regex(/^https?:\/\/[^\s]+$/);
 
 export const serviceSlugSchema = z.enum([
   "sito-nuovo",
@@ -19,13 +21,13 @@ export const websiteAssessmentSchema = z.object({
   opportunities: z.array(z.object({
     service: serviceSlugSchema,
     evidence: z.string().min(1).max(300),
-    sourceUrl: z.url().max(2048),
+    sourceUrl: httpUrlSchema,
     rationale: z.string().min(1).max(300),
   })).max(4),
   risks: z.array(z.string().min(1).max(240)).max(4),
   missingEvidence: z.array(z.string().min(1).max(160)).max(6),
   outreachAngle: z.string().min(1).max(500),
-  sources: z.array(z.url().max(2048)).min(1).max(8),
+  sources: z.array(httpUrlSchema).min(1).max(8),
 });
 
 export type WebsiteAssessment = z.infer<typeof websiteAssessmentSchema>;
@@ -43,6 +45,23 @@ export type WebsiteDomainInput = {
   category: string;
   websiteUrl: string;
 };
+
+export const candidateEnrichmentSchema = z.object({
+  businessName: z.string().min(2).max(200),
+  category: z.string().min(1).max(200),
+  city: z.string().min(1).max(120).nullable(),
+  region: z.string().min(1).max(120).nullable(),
+  phone: z.string().min(5).max(60).nullable(),
+  email: z.email().max(254).nullable(),
+  address: z.string().min(3).max(300).nullable(),
+  websiteUrl: httpUrlSchema,
+  hasBooking: z.boolean().nullable(),
+  confidence: z.number().min(0).max(1),
+  missingEvidence: z.array(z.string().min(1).max(160)).max(8),
+  sources: z.array(httpUrlSchema).min(1).max(10),
+});
+
+export type CandidateEnrichment = z.infer<typeof candidateEnrichmentSchema>;
 
 export function normalizeWebsiteEvidence(input: WebsiteEvidence): WebsiteEvidence {
   return {
