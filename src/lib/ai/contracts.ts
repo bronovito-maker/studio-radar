@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 export const WEBSITE_ASSESSMENT_VERSION = "website-assessment-v2026.06.28-2";
-export const CANDIDATE_ENRICHMENT_VERSION = "candidate-enrichment-v2026.06.28-1";
+export const CANDIDATE_ENRICHMENT_VERSION = "candidate-enrichment-v2026.06.28-2";
 export const OUTREACH_DRAFT_VERSION = "outreach-draft-v2026.06.28-1";
 const httpUrlSchema = z.string().max(2048).regex(/^https?:\/\/[^\s]+$/);
 
@@ -60,6 +60,17 @@ export const candidateEnrichmentSchema = z.object({
   confidence: z.number().min(0).max(1),
   missingEvidence: z.array(z.string().min(1).max(160)).max(8),
   sources: z.array(httpUrlSchema).min(1).max(10),
+  fieldSources: z.object({
+    businessName: httpUrlSchema.nullable(),
+    category: httpUrlSchema.nullable(),
+    city: httpUrlSchema.nullable(),
+    region: httpUrlSchema.nullable(),
+    phone: httpUrlSchema.nullable(),
+    email: httpUrlSchema.nullable(),
+    address: httpUrlSchema.nullable(),
+    websiteUrl: httpUrlSchema.nullable(),
+    hasBooking: httpUrlSchema.nullable(),
+  }),
 });
 
 export type CandidateEnrichment = z.infer<typeof candidateEnrichmentSchema>;

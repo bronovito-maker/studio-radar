@@ -1969,6 +1969,43 @@ h2 {
   padding: 12px;
 }
 
+.candidate-field-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 20px;
+}
+
+.verification-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border-radius: 5px;
+  padding: 3px 5px;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.verification-badge.verified { background: var(--success-soft); color: var(--success); }
+.verification-badge.pending { background: var(--panel-soft); color: var(--muted); }
+.verification-badge.missing { background: var(--warning-soft); color: var(--warning); }
+
+.google-field-reference {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 6px;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.google-field-reference > span {
+  color: var(--text);
+  font-weight: 700;
+}
+
 .candidate-ai-action > div,
 .candidate-ai-result > div {
   display: grid;

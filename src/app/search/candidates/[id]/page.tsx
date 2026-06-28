@@ -56,6 +56,12 @@ export default async function CandidatePage({ params, searchParams }: CandidateP
               websiteUrl: place?.websiteUri ?? "",
               hasBooking: false,
             }}
+            googleReference={{
+              businessName: place?.displayName.text ?? "",
+              address: place?.formattedAddress ?? "",
+              phone: place?.nationalPhoneNumber ?? "",
+              websiteUrl: place?.websiteUri ?? "",
+            }}
           />
         </section>
 

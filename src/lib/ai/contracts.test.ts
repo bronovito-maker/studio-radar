@@ -64,6 +64,17 @@ describe("website AI contracts", () => {
       confidence: 0.72,
       missingEvidence: ["Telefono", "Email"],
       sources: ["https://example.com/contatti"],
+      fieldSources: {
+        businessName: "https://example.com",
+        category: "https://example.com",
+        city: "https://example.com/contatti",
+        region: "https://example.com/contatti",
+        phone: null,
+        email: null,
+        address: null,
+        websiteUrl: "https://example.com",
+        hasBooking: null,
+      },
     }).success).toBe(true);
   });
 

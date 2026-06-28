@@ -201,6 +201,7 @@ export async function enrichCandidateFromOfficialWebsite(input: {
             "Telefono, email, indirizzo e booking devono essere riportati solo se visibili sul sito ufficiale.",
             "Usa null per ogni dato non verificato e dichiaralo in missingEvidence.",
             "Ogni URL in sources deve appartenere al dominio consentito.",
+            "Per ogni campo valorizzato inserisci in fieldSources l'URL esatto della pagina ufficiale che lo prova; usa null quando manca una prova diretta.",
             "La categoria, la localita e la regione di ricerca sono solo contesto: correggile se il sito ufficiale mostra dati diversi.",
           ].join(" "),
         },
@@ -227,6 +228,10 @@ export async function enrichCandidateFromOfficialWebsite(input: {
       throw new AiAnalysisError("INVALID_OUTPUT");
     }
     if (!sourceBelongsToDomain(enrichment.websiteUrl, domain)) {
+      throw new AiAnalysisError("INVALID_OUTPUT");
+    }
+    const fieldSourceValues = Object.values(enrichment.fieldSources).filter((source): source is string => Boolean(source));
+    if (!fieldSourceValues.every((source) => sourceBelongsToDomain(source, domain))) {
       throw new AiAnalysisError("INVALID_OUTPUT");
     }
 

@@ -23,6 +23,7 @@ const DETAILS_FIELD_MASK = [
   "id",
   "displayName",
   "formattedAddress",
+  "nationalPhoneNumber",
   "websiteUri",
   "primaryTypeDisplayName",
   "businessStatus",

@@ -67,8 +67,13 @@ export type CandidateEnrichmentState = {
     confidence: number;
     missingEvidence: string[];
     sources: string[];
+    fieldSources: Record<CandidateFieldKey, string | null>;
   };
 };
+
+export type CandidateFieldKey =
+  | "businessName" | "category" | "city" | "region" | "phone"
+  | "email" | "address" | "websiteUrl" | "hasBooking";
 
 const shortlistSchema = z.object({
   placeId: z.string().trim().min(1).max(2048),
@@ -348,6 +353,7 @@ export async function enrichCandidateAction(
         confidence: result.enrichment.confidence,
         missingEvidence: result.enrichment.missingEvidence,
         sources: result.enrichment.sources,
+        fieldSources: result.enrichment.fieldSources,
       },
     };
   } catch (analysisError) {
