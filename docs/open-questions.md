@@ -33,6 +33,6 @@ Queste decisioni non bloccano la documentazione, ma vanno chiuse prima o durante
 
 ## Deploy
 
-- Target iniziale: Vercel + Supabase.
-- Dominio previsto?
+- Target iniziale: Render + Supabase.
+- Dominio: `https://studio-radar.onrender.com`.
 - Ambiente staging non necessario subito: local first, produzione quando il prodotto e pronto.

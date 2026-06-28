@@ -2,19 +2,20 @@
 
 ## Configurazione esterna
 
-- Collegare il repository GitHub a Vercel.
-- Scegliere il dominio definitivo e impostare `NEXT_PUBLIC_APP_URL`.
-- Caricare su Vercel tutte le variabili descritte in `env-vars.md`.
+- Collegare il repository GitHub al Web Service Render.
+- Impostare `NEXT_PUBLIC_APP_URL=https://studio-radar.onrender.com`.
+- Caricare su Render tutte le variabili descritte in `env-vars.md`.
 - Generare `CRON_SECRET` lungo e casuale.
 - Caricare `SUPABASE_SECRET_KEY` soltanto come secret server-side.
 - Configurare booking URL dalla pagina Impostazioni.
+- Creare un Render Cron Job giornaliero per `/api/cron/email-followups` con Bearer `CRON_SECRET`.
 
 ## Supabase Auth
 
 - Attivare Leaked Password Protection.
 - Configurare Site URL e redirect URL del dominio pubblico.
-- Creare un account E2E admin e uno collaborator, senza dati reali.
-- Eseguire `npm run test:e2e` con tutte le prove autenticate attive.
+- Account E2E admin e collaborator creati senza dati reali.
+- `npm run test:e2e` completato con tutte le prove autenticate attive.
 - Eliminare o disabilitare gli account E2E se non usati in CI.
 
 ## Provider esterni
@@ -34,7 +35,7 @@
 - Supabase Security Advisor senza errori critici.
 - Verifica manuale light/dark e mobile/desktop.
 - Smoke test: login → discovery → shortlist → lead → score → outreach.
-- Chiamata cron autorizzata e seconda chiamata concorrente respinta.
+- Chiamata cron autorizzata verificata in modalita disabilitata e lock concorrente verificato a livello database.
 
 ## Attivazione
 

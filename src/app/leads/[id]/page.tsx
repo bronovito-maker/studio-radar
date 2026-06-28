@@ -1,4 +1,4 @@
-import { ArrowLeft, Calendar, ExternalLink, Gauge, Globe, Mail, MapPin, MessageCircle, Phone, RefreshCw, Save, Sparkles } from "lucide-react";
+import { ArrowLeft, Calendar, CheckCircle2, ExternalLink, Gauge, Globe, Mail, MapPin, MessageCircle, Phone, RefreshCw, Save, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
@@ -11,7 +11,7 @@ import { formatCurrency, formatDate, LEAD_STATUSES, SOURCE_LABELS, STATUS_LABELS
 import type { ScoreComponent } from "@/lib/scoring/deterministic";
 import { createClient } from "@/lib/supabase/server";
 import type { Json } from "@/types/database";
-import { analyzeLeadWithOpenAi, scoreLeadDeterministically, updateLeadNotes, updateLeadStatus } from "../actions";
+import { analyzeLeadWithOpenAi, recordEmailReplyAction, scoreLeadDeterministically, updateLeadNotes, updateLeadStatus } from "../actions";
 
 type LeadDetailPageProps = {
   params: Promise<{ id: string }>;
@@ -26,6 +26,17 @@ const EVENT_LABELS: Record<string, string> = {
   hybrid_score_created: "Score ibrido OpenAI calcolato",
   candidate_converted: "Candidato verificato e aggiunto al CRM",
   manual_outreach_recorded: "Contatto manuale registrato",
+  email_sent: "Email inviata",
+  email_delivered: "Email consegnata",
+  email_opened: "Email aperta",
+  email_unique_opened: "Prima apertura email",
+  email_proxy_open: "Apertura email rilevata dal provider",
+  email_unique_proxy_open: "Prima apertura proxy rilevata",
+  email_click: "Link email cliccato",
+  email_reply_recorded: "Risposta email registrata",
+  email_hard_bounce: "Email respinta definitivamente",
+  email_soft_bounce: "Email respinta temporaneamente",
+  email_unsubscribed: "Contatto disiscritto",
   lead_anonymized: "Dati del lead anonimizzati",
 };
 
@@ -87,11 +98,13 @@ export default async function LeadDetailPage({ params, searchParams }: LeadDetai
   const { id } = await params;
   const feedback = await searchParams;
   const supabase = await createClient();
-  const [{ data: lead, error }, { data: events }, { data: latestScore }, { data: services }] = await Promise.all([
+  const [{ data: lead, error }, { data: events }, { data: latestScore }, { data: services }, { data: settings }, { data: emails }] = await Promise.all([
     supabase.from("leads").select("*").eq("id", id).single(),
     supabase.from("lead_events").select("id, event_type, payload, created_at").eq("lead_id", id).order("created_at", { ascending: false }).limit(30),
     supabase.from("lead_scores").select("score, grade, reasoning, positive_signals, negative_signals, deterministic_score, ai_score, confidence, provider, model, prompt_version, recommended_service_id, input_snapshot, created_at").eq("lead_id", id).order("created_at", { ascending: false }).limit(1).maybeSingle(),
     supabase.from("services").select("id, name").eq("is_active", true),
+    supabase.from("settings").select("email_enabled, email_sender_email").eq("id", 1).single(),
+    supabase.from("email_messages").select("id, sequence_number, status, subject, scheduled_for, sent_at, delivered_at, first_opened_at, clicked_at, error_code").eq("lead_id", id).order("created_at", { ascending: false }).limit(12),
   ]);
 
   if (error || !lead) notFound();
@@ -130,9 +143,30 @@ export default async function LeadDetailPage({ params, searchParams }: LeadDetai
           ) : null}
 
           <article className="panel outreach-panel">
-            <div className="panel-header"><div><p className="eyebrow">Contatto consulenziale</p><h2>Outreach WhatsApp</h2></div><MessageCircle size={19} /></div>
-            <OutreachComposer leadId={lead.id} businessName={lead.business_name} initialPhone={lead.phone ?? ""} />
+            <div className="panel-header"><div><p className="eyebrow">Contatto consulenziale</p><h2>Outreach WhatsApp ed email</h2></div><MessageCircle size={19} /></div>
+            <OutreachComposer
+              leadId={lead.id}
+              businessName={lead.business_name}
+              initialPhone={lead.phone ?? ""}
+              initialEmail={lead.email ?? ""}
+              emailEnabled={Boolean(settings?.email_enabled && settings.email_sender_email)}
+              emailSuppressed={Boolean(lead.email_suppressed_at)}
+            />
           </article>
+
+          {emails?.length ? <article className="panel email-history">
+            <div className="panel-header"><div><p className="eyebrow">Brevo</p><h2>Storico email</h2></div><Mail size={19} /></div>
+            <div className="email-history-list">{emails.map((email) => <div className="email-history-row" key={email.id}>
+              <div><strong>{email.sequence_number ? `Follow-up ${email.sequence_number}` : "Email iniziale"}: {email.subject}</strong><span>{email.sent_at ? `Inviata ${formatDate(email.sent_at)}` : `Pianificata ${formatDate(email.scheduled_for)}`}</span></div>
+              <span className={`email-status email-status-${email.status}`}>{email.status}</span>
+              <small>{email.clicked_at ? "Link cliccato" : email.first_opened_at ? "Aperta" : email.delivered_at ? "Consegnata" : email.error_code ?? ""}</small>
+            </div>)}</div>
+            {!lead.email_replied_at && emails.some((email) => email.sent_at) ? <form className="email-reply-form" action={recordEmailReplyAction}>
+              <input type="hidden" name="leadId" value={lead.id} />
+              <p>Se la risposta arriva nella casella collegata, registrala qui: i follow-up in attesa verranno annullati.</p>
+              <SubmitButton className="secondary-button" pendingLabel="Registrazione..."><CheckCircle2 size={16} /> Segna risposta ricevuta</SubmitButton>
+            </form> : null}
+          </article> : null}
 
           <article className="panel">
             <div className="panel-header"><div><p className="eyebrow">Contesto interno</p><h2>Note</h2></div></div>

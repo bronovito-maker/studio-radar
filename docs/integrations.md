@@ -34,7 +34,7 @@ In produzione applicare anche una restrizione adatta al backend e monitorare quo
 
 ### Discovery notturna
 
-- Vercel richiama `GET /api/cron/discovery` alle 03:00 UTC.
+- Uno scheduler esterno richiama `GET /api/cron/discovery` alle 03:00 UTC.
 - La route richiede `Authorization: Bearer <CRON_SECRET>`.
 - Categoria, citta e regione sono configurabili dagli admin.
 - Ogni run richiede al massimo 10 risultati e salva in shortlist soltanto Place ID nuovi.
@@ -82,6 +82,27 @@ In produzione applicare anche una restrizione adatta al backend e monitorare quo
 ### Futuro
 
 - WhatsApp Business Platform solo se compliance e opt-in sono risolti.
+
+## Brevo Email
+
+### Uso implementato
+
+- Invio transazionale singolo dalla scheda lead, sempre dopo approvazione dell'operatore.
+- Mittente verificato, reply-to e limite giornaliero configurabili dagli amministratori.
+- Tre follow-up opzionali con ritardi configurabili e cron giornaliero alle 07:00 UTC.
+- Tracking tramite webhook autenticato per invio, consegna, apertura, click, bounce, blocco, spam, errore e disiscrizione.
+- Eventi idempotenti: una consegna webhook ripetuta non duplica audit o aggiornamenti.
+- Stop immediato dei follow-up su risposta registrata, bounce, blocco, spam o disiscrizione.
+- Testo di opt-out aggiunto automaticamente a ogni messaggio.
+
+### Attivazione
+
+1. Configurare `BREVO_API_KEY`, `BREVO_WEBHOOK_TOKEN`, `SUPABASE_SECRET_KEY` e `CRON_SECRET` sul server.
+2. Registrare in Brevo il webhook `POST /api/webhooks/brevo` con autenticazione Bearer.
+3. Configurare un mittente Brevo verificato nella pagina Impostazioni.
+4. Abilitare prima l'invio e poi, separatamente, i follow-up automatici.
+
+Le risposte nella casella reply-to vengono registrate manualmente dal CRM; l'inbound parsing automatico non è ancora attivo.
 
 ## Notion
 

@@ -1,22 +1,13 @@
-import { timingSafeEqual } from "node:crypto";
 import { NextResponse } from "next/server";
 import { PlacesError, searchGooglePlaces } from "@/lib/places/client";
+import { hasBearerToken } from "@/lib/request-auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-function authorized(request: Request) {
-  const expected = process.env.CRON_SECRET?.trim();
-  const provided = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "") ?? "";
-  if (!expected || !provided) return false;
-  const expectedBytes = Buffer.from(expected);
-  const providedBytes = Buffer.from(provided);
-  return expectedBytes.length === providedBytes.length && timingSafeEqual(expectedBytes, providedBytes);
-}
-
 export async function GET(request: Request) {
-  if (!authorized(request)) return NextResponse.json({ error: "UNAUTHORIZED" }, { status: 401 });
+  if (!hasBearerToken(request, process.env.CRON_SECRET)) return NextResponse.json({ error: "UNAUTHORIZED" }, { status: 401 });
 
   let supabase: ReturnType<typeof createAdminClient>;
   try {

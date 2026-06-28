@@ -23,6 +23,15 @@ Questo file descrive le variabili previste. I valori reali non vanno committati.
 |---|---|---|
 | `CRON_SECRET` | si prod | Lungo, random, solo server |
 
+## Email Brevo
+
+| Nome | Obbligatoria | Note |
+|---|---|---|
+| `BREVO_API_KEY` | si per invio email | API key solo server, mai esposta nel client |
+| `BREVO_WEBHOOK_TOKEN` | si per tracking | Bearer token condiviso con il webhook Brevo |
+
+Il webhook transazionale deve puntare a `https://<dominio>/api/webhooks/brevo` con autenticazione Bearer. Gli eventi consigliati sono `sent`, `delivered`, `opened`, `uniqueOpened`, `click`, `softBounce`, `hardBounce`, `blocked`, `spam`, `invalid`, `error` e `unsubscribed`.
+
 ## Google Places
 
 | Nome | Obbligatoria | Note |

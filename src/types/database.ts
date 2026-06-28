@@ -79,6 +79,13 @@ export type Database = {
           cron_category: string;
           cron_location: string;
           cron_region: string;
+          email_enabled: boolean;
+          email_sender_name: string;
+          email_sender_email: string | null;
+          email_reply_to: string | null;
+          email_daily_limit: number;
+          email_follow_up_enabled: boolean;
+          email_follow_up_delays: number[];
           notion_sync_enabled: boolean;
           sheets_sync_enabled: boolean;
           created_at: string;
@@ -93,6 +100,13 @@ export type Database = {
           cron_category?: string;
           cron_location?: string;
           cron_region?: string;
+          email_enabled?: boolean;
+          email_sender_name?: string;
+          email_sender_email?: string | null;
+          email_reply_to?: string | null;
+          email_daily_limit?: number;
+          email_follow_up_enabled?: boolean;
+          email_follow_up_delays?: number[];
           notion_sync_enabled?: boolean;
           sheets_sync_enabled?: boolean;
           created_at?: string;
@@ -129,6 +143,10 @@ export type Database = {
           assigned_to: string | null;
           notes: string;
           last_contacted_at: string | null;
+          last_email_opened_at: string | null;
+          last_email_clicked_at: string | null;
+          email_replied_at: string | null;
+          email_suppressed_at: string | null;
           booked_at: string | null;
           became_client_at: string | null;
           created_at: string;
@@ -161,6 +179,10 @@ export type Database = {
           assigned_to?: string | null;
           notes?: string;
           last_contacted_at?: string | null;
+          last_email_opened_at?: string | null;
+          last_email_clicked_at?: string | null;
+          email_replied_at?: string | null;
+          email_suppressed_at?: string | null;
           booked_at?: string | null;
           became_client_at?: string | null;
           created_at?: string;
@@ -345,6 +367,88 @@ export type Database = {
         Update: never;
         Relationships: [];
       };
+      email_messages: {
+        Row: {
+          id: string;
+          thread_id: string;
+          lead_id: string;
+          parent_message_id: string | null;
+          sequence_number: number;
+          kind: string;
+          status: string;
+          recipient_email: string;
+          recipient_name: string;
+          subject: string;
+          body: string;
+          provider: string;
+          provider_message_id: string | null;
+          scheduled_for: string;
+          sent_at: string | null;
+          delivered_at: string | null;
+          first_opened_at: string | null;
+          clicked_at: string | null;
+          bounced_at: string | null;
+          failed_at: string | null;
+          cancelled_at: string | null;
+          error_code: string | null;
+          attempt_count: number;
+          created_by: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          thread_id?: string;
+          lead_id: string;
+          parent_message_id?: string | null;
+          sequence_number?: number;
+          kind?: string;
+          status?: string;
+          recipient_email: string;
+          recipient_name: string;
+          subject: string;
+          body: string;
+          provider?: string;
+          provider_message_id?: string | null;
+          scheduled_for?: string;
+          sent_at?: string | null;
+          delivered_at?: string | null;
+          first_opened_at?: string | null;
+          clicked_at?: string | null;
+          bounced_at?: string | null;
+          failed_at?: string | null;
+          cancelled_at?: string | null;
+          error_code?: string | null;
+          attempt_count?: number;
+          created_by: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["email_messages"]["Insert"]>;
+        Relationships: [];
+      };
+      email_provider_events: {
+        Row: {
+          id: number;
+          email_message_id: string;
+          event_key: string;
+          event_type: string;
+          occurred_at: string;
+          payload: Json;
+          received_at: string;
+        };
+        Insert: {
+          id?: number;
+          email_message_id: string;
+          event_key: string;
+          event_type: string;
+          occurred_at: string;
+          payload?: Json;
+          received_at?: string;
+        };
+        Update: never;
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: {
@@ -444,6 +548,25 @@ export type Database = {
       anonymize_lead: {
         Args: { p_lead_id: string };
         Returns: undefined;
+      };
+      record_email_sent: {
+        Args: { p_email_id: string; p_provider_message_id: string; p_follow_up_bodies?: string[] };
+        Returns: undefined;
+      };
+      record_email_reply: {
+        Args: { p_lead_id: string };
+        Returns: undefined;
+      };
+      record_email_provider_event: {
+        Args: {
+          p_email_id: string;
+          p_event_key: string;
+          p_event_type: string;
+          p_provider_message_id: string;
+          p_occurred_at: string;
+          p_payload: Json;
+        };
+        Returns: boolean;
       };
     };
     Enums: {

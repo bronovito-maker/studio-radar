@@ -60,6 +60,9 @@ Validare il flusso completo:
 - Apertura link `wa.me`.
 - Tracciamento tramite cambio stato a `contattato`.
 - Un solo booking link globale.
+- Invio email Brevo singolo dopo approvazione.
+- Tracking consegna, apertura, click e bounce.
+- Follow-up email opzionali con limite giornaliero e stop controllato.
 
 ### Import
 

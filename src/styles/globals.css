@@ -1662,6 +1662,22 @@ h2 {
   color: var(--warning);
 }
 
+.integration-state > div {
+  display: grid;
+  gap: 2px;
+}
+
+.integration-state small {
+  font-weight: 550;
+}
+
+.status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
 .discovery-fields {
   display: grid;
   grid-template-columns: minmax(180px, 1.3fr) minmax(180px, 1fr) minmax(160px, 0.8fr) 90px auto;
@@ -2021,6 +2037,19 @@ h2 {
   max-width: 680px;
 }
 
+.form-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.form-grid.two-columns {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.form-grid.three-columns {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
 .settings-section-heading {
   display: grid;
   gap: 3px;
@@ -2049,6 +2078,30 @@ h2 {
 .outreach-record {
   display: grid;
   gap: 16px;
+}
+
+.outreach-channels {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.outreach-record {
+  align-content: start;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  padding: 14px;
+}
+
+.channel-heading {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--accent-strong);
+}
+
+.email-record {
+  background: var(--panel-soft);
 }
 
 .outreach-generate {
@@ -2119,6 +2172,58 @@ h2 {
 .outreach-phone {
   color: var(--muted);
   font-size: 12px;
+}
+
+.email-history,
+.email-history-list,
+.email-reply-form {
+  display: grid;
+  gap: 12px;
+}
+
+.email-history-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(90px, auto);
+  align-items: center;
+  gap: 12px;
+  border-bottom: 1px solid var(--line);
+  padding: 10px 0;
+}
+
+.email-history-row > div {
+  display: grid;
+  gap: 4px;
+}
+
+.email-history-row span,
+.email-history-row small,
+.email-reply-form p {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.email-status {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 4px 8px;
+  font-weight: 750;
+}
+
+.email-status-sent,
+.email-status-delivered,
+.email-status-opened,
+.email-status-clicked {
+  border-color: var(--success);
+  background: var(--success-soft);
+  color: var(--success) !important;
+}
+
+.email-status-bounced,
+.email-status-failed,
+.email-status-cancelled {
+  border-color: var(--danger);
+  background: var(--danger-soft);
+  color: var(--danger) !important;
 }
 
 .danger-panel {
@@ -2395,6 +2500,13 @@ h2 {
   }
 
   .settings-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .form-grid.two-columns,
+  .form-grid.three-columns,
+  .outreach-channels,
+  .email-history-row {
     grid-template-columns: 1fr;
   }
 

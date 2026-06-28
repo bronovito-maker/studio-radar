@@ -28,6 +28,18 @@ test("il cron rifiuta richieste senza secret", async ({ request }) => {
   await expect(response.json()).resolves.toEqual({ error: "UNAUTHORIZED" });
 });
 
+test("cron email e webhook Brevo usano i secret macchina", async ({ request }) => {
+  const cronResponse = await request.get("/api/cron/email-followups");
+  expect(cronResponse.status()).toBe(401);
+  await expect(cronResponse.json()).resolves.toEqual({ error: "UNAUTHORIZED" });
+
+  const webhookResponse = await request.post("/api/webhooks/brevo", {
+    data: { event: "delivered" },
+  });
+  expect(webhookResponse.status()).toBe(401);
+  await expect(webhookResponse.json()).resolves.toEqual({ error: "UNAUTHORIZED" });
+});
+
 test.describe("sessione admin", () => {
   test.skip(!process.env.E2E_ADMIN_EMAIL || !process.env.E2E_ADMIN_PASSWORD, "Credenziali E2E admin non configurate");
 

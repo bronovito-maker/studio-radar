@@ -2,7 +2,12 @@ import { NextResponse, type NextRequest } from "next/server";
 import { updateSession } from "@/lib/supabase/proxy";
 
 export async function proxy(request: NextRequest) {
-  if (request.nextUrl.pathname === "/api/cron/discovery") return NextResponse.next();
+  const machineRoutes = new Set([
+    "/api/cron/discovery",
+    "/api/cron/email-followups",
+    "/api/webhooks/brevo",
+  ]);
+  if (machineRoutes.has(request.nextUrl.pathname)) return NextResponse.next();
   return updateSession(request);
 }
 

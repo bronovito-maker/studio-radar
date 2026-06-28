@@ -6,7 +6,7 @@ Ultimo aggiornamento: 28 giugno 2026.
 
 Studio Radar ha completato documentazione, fondazioni tecniche, CRM core, import CSV e scoring ibrido. La discovery Google Places e operativa: ricerca live, normalizzazione, score e controllo duplicati sono implementati e verificati con dati reali.
 
-Il CRM e eseguibile e utilizzabile per inserimento manuale o CSV, discovery live, gestione, scoring deterministico, analisi OpenAI del sito ed export. Il flusso MVP completo richiede ancora l'arricchimento conforme dei candidati e l'outreach.
+Il CRM e eseguibile e utilizzabile per inserimento manuale o CSV, discovery live, gestione, scoring deterministico, analisi OpenAI del sito, outreach WhatsApp/email ed export. Per attivare l'email in produzione restano la configurazione dei secret e del dominio pubblico.
 
 ## Avanzamento roadmap
 
@@ -17,9 +17,9 @@ Il CRM e eseguibile e utilizzabile per inserimento manuale o CSV, discovery live
 | 2 - CRM core | Completata | Dashboard reale, lista e dettaglio lead, inserimento, stati, note e audit |
 | 3 - Import e deduplica | Completata | CSV, mapping, preview, deduplica concorrente ed export filtrato |
 | 4 - Discovery e scoring | Completata | Ricerca, shortlist, arricchimento verificabile, conversione lead e scoring completati |
-| 5 - Outreach manuale | Completata | Bozza OpenAI modificabile, fallback, `wa.me`, booking globale e audit |
+| 5 - Outreach | Completata | WhatsApp manuale, email Brevo approvata, tracking e follow-up controllati |
 | 6 - Cron controllato | Implementata, non attiva | Endpoint, secret, lock, configurazione e scan runs pronti; mancano secret produzione |
-| 7 - Hardening | Parziale | Rate limit, anonimizzazione e test anonimi completati; restano E2E autenticati e logging esterno |
+| 7 - Hardening | Quasi completata | Rate limit, anonimizzazione e suite E2E completa; resta logging esterno opzionale |
 
 ## Fondazioni verificate
 
@@ -59,12 +59,15 @@ Il CRM e eseguibile e utilizzabile per inserimento manuale o CSV, discovery live
 - Conversione candidato verificata sui casi creazione e duplicato con rollback; nessun dato sintetico persistito.
 - Coda outreach e composer WhatsApp completati: bozza OpenAI modificabile, fallback deterministico e booking link globale.
 - Registrazione manuale del contatto verificata: stato, timestamp e audit atomici con rollback completo.
+- Email Brevo implementata: invio approvato, limite giornaliero, mittente configurabile, tracking webhook idempotente e storico per lead.
+- Tre follow-up schedulabili con stop automatico su bounce, disiscrizione o risposta registrata; flusso SQL verificato con rollback e RLS autenticata.
+- Invio email Brevo abilitato con mittente verificato `crmdile007@gmail.com`; tracking webhook e follow-up automatici restano disabilitati fino al deploy su dominio pubblico.
 - Pagina impostazioni amministrativa disponibile per booking URL e soglia di qualificazione.
 - Rate limit PostgreSQL persistente applicato a Places, import, arricchimento, analisi AI e bozze outreach; verifica limite superata con rollback.
 - Anonimizzazione lead admin-only verificata, incluso il diniego al ruolo collaboratore.
-- Suite Playwright aggiunta: redirect e protezione route anonime passano; test admin/collaborator pronti e condizionati a credenziali E2E dedicate.
-- Cron Vercel implementato alle 03:00 UTC con Bearer secret, configurazione amministrativa, limite 10 risultati e lock PostgreSQL concorrente.
-- Endpoint cron anonimo verificato con `401`; esecuzione live sospesa finche `SUPABASE_SECRET_KEY` e `CRON_SECRET` non vengono configurati.
+- Suite Playwright completa: 5 test passano, inclusi accesso admin, diniego collaboratore, protezione anonima e cron senza secret.
+- Endpoint cron implementato con Bearer secret, configurazione amministrativa, limite 10 risultati e lock PostgreSQL concorrente; lo scheduler va creato su Render.
+- Endpoint cron verificato sia senza secret (`401`) sia con secret (`200 disabled`); chiavi server configurate correttamente.
 
 ## Auth ancora da chiudere
 

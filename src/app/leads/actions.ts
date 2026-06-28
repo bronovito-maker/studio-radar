@@ -6,7 +6,9 @@ import { z } from "zod";
 import { websiteAssessmentSchema } from "@/lib/ai/contracts";
 import { AiAnalysisError, analyzeWebsiteDomainWithOpenAi, generateOutreachDraftWithOpenAi } from "@/lib/ai/openai";
 import { requireAdmin, requireViewer } from "@/lib/auth";
+import { BrevoError, sendBrevoEmail } from "@/lib/brevo";
 import { isLeadStatus } from "@/lib/crm";
+import { followUpBodies, withOptOut } from "@/lib/email-outreach";
 import { scoreLead } from "@/lib/scoring/deterministic";
 import { combineScores } from "@/lib/scoring/hybrid";
 import { consumeRateLimit } from "@/lib/rate-limit";
@@ -350,6 +352,120 @@ export async function recordManualOutreachAction(formData: FormData) {
   revalidatePath("/outreach");
   revalidatePath(`/leads/${parsed.data.leadId}`);
   redirect(withMessage(`/leads/${parsed.data.leadId}`, "success", "Contatto WhatsApp registrato"));
+}
+
+export async function sendLeadEmailAction(formData: FormData) {
+  const viewer = await requireViewer();
+  const parsed = z.object({
+    leadId: z.uuid(),
+    subject: z.string().trim().min(2).max(200),
+    message: z.string().trim().min(20).max(9000),
+  }).safeParse({
+    leadId: value(formData, "leadId"),
+    subject: value(formData, "subject"),
+    message: value(formData, "message"),
+  });
+  if (!parsed.success) redirect(withMessage("/leads", "error", parsed.error.issues[0]?.message ?? "Email non valida"));
+
+  const supabase = await createClient();
+  const [{ data: lead }, { data: settings }] = await Promise.all([
+    supabase.from("leads").select("id, business_name, email, status, email_suppressed_at").eq("id", parsed.data.leadId).single(),
+    supabase.from("settings").select("email_enabled, email_sender_name, email_sender_email, email_reply_to, email_daily_limit").eq("id", 1).single(),
+  ]);
+  if (!lead?.email) redirect(withMessage(`/leads/${parsed.data.leadId}`, "error", "Il lead non ha un indirizzo email valido"));
+  if (lead.email_suppressed_at || ["booked", "client", "discarded"].includes(lead.status)) {
+    redirect(withMessage(`/leads/${lead.id}`, "error", "Questo lead non è contattabile via email"));
+  }
+  if (!settings?.email_enabled || !settings.email_sender_email) {
+    redirect(withMessage(`/leads/${lead.id}`, "error", "Configura e abilita Brevo nelle Impostazioni prima dell'invio"));
+  }
+
+  const startOfDay = new Date();
+  startOfDay.setUTCHours(0, 0, 0, 0);
+  const { count } = await supabase.from("email_messages")
+    .select("id", { count: "exact", head: true })
+    .gte("sent_at", startOfDay.toISOString());
+  if ((count ?? 0) >= settings.email_daily_limit) {
+    redirect(withMessage(`/leads/${lead.id}`, "error", "Limite email giornaliero raggiunto"));
+  }
+
+  const body = withOptOut(parsed.data.message);
+  const { data: emailMessage, error: createError } = await supabase.from("email_messages").insert({
+    lead_id: lead.id,
+    recipient_email: lead.email,
+    recipient_name: lead.business_name,
+    subject: parsed.data.subject,
+    body,
+    status: "sending",
+    created_by: viewer.id,
+  }).select("id").single();
+  if (createError || !emailMessage) {
+    redirect(withMessage(`/leads/${lead.id}`, "error", "Email non preparata. Riprova."));
+  }
+
+  let providerMessageId: string;
+  try {
+    const result = await sendBrevoEmail({
+      id: emailMessage.id,
+      toEmail: lead.email,
+      toName: lead.business_name,
+      senderEmail: settings.email_sender_email,
+      senderName: settings.email_sender_name,
+      replyTo: settings.email_reply_to,
+      subject: parsed.data.subject,
+      body,
+    });
+    providerMessageId = result.messageId;
+  } catch (error) {
+    const code = error instanceof BrevoError ? error.code : "SEND_FAILED";
+    await supabase.from("email_messages").update({
+      status: "failed",
+      failed_at: new Date().toISOString(),
+      error_code: code,
+      attempt_count: 1,
+    }).eq("id", emailMessage.id);
+    const message = code === "NOT_CONFIGURED" ? "Chiave Brevo non configurata sul server"
+      : code === "RATE_LIMITED" ? "Brevo ha applicato un limite temporaneo. Riprova più tardi."
+        : "Invio Brevo non riuscito. Nessuna email è stata registrata come inviata.";
+    redirect(withMessage(`/leads/${lead.id}`, "error", message));
+  }
+
+  const { error: recordError } = await supabase.rpc("record_email_sent", {
+    p_email_id: emailMessage.id,
+    p_provider_message_id: providerMessageId,
+    p_follow_up_bodies: followUpBodies(lead.business_name),
+  });
+  if (recordError) {
+    await supabase.from("email_messages").update({
+      status: "sent",
+      provider_message_id: providerMessageId,
+      sent_at: new Date().toISOString(),
+      attempt_count: 1,
+      error_code: "AUDIT_INCOMPLETE",
+    }).eq("id", emailMessage.id);
+    redirect(withMessage(`/leads/${lead.id}`, "error", "Email inviata, ma audit e follow-up non sono stati completati: non reinviarla"));
+  }
+
+  revalidatePath("/");
+  revalidatePath("/leads");
+  revalidatePath("/outreach");
+  revalidatePath(`/leads/${lead.id}`);
+  redirect(withMessage(`/leads/${lead.id}`, "success", "Email inviata con Brevo e follow-up pianificati"));
+}
+
+export async function recordEmailReplyAction(formData: FormData) {
+  await requireViewer();
+  const leadId = z.uuid().safeParse(value(formData, "leadId"));
+  if (!leadId.success) redirect(withMessage("/leads", "error", "Lead non valido"));
+
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("record_email_reply", { p_lead_id: leadId.data });
+  if (error) redirect(withMessage(`/leads/${leadId.data}`, "error", "Risposta non registrata"));
+
+  revalidatePath("/");
+  revalidatePath("/outreach");
+  revalidatePath(`/leads/${leadId.data}`);
+  redirect(withMessage(`/leads/${leadId.data}`, "success", "Risposta registrata: follow-up automatici fermati"));
 }
 
 export async function anonymizeLeadAction(formData: FormData) {

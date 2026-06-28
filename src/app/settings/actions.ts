@@ -14,6 +14,14 @@ const settingsSchema = z.object({
   cronCategory: z.enum(DISCOVERY_CATEGORIES),
   cronLocation: z.string().trim().min(2).max(100),
   cronRegion: z.enum(["Emilia-Romagna", "Toscana", "Lombardia"]),
+  emailEnabled: z.boolean(),
+  emailSenderName: z.string().trim().min(1).max(120),
+  emailSenderEmail: z.string().trim().max(254).refine((entry) => !entry || z.email().safeParse(entry).success, "Email mittente non valida").transform((entry) => entry || null),
+  emailReplyTo: z.string().trim().max(254).refine((entry) => !entry || z.email().safeParse(entry).success, "Reply-to non valido").transform((entry) => entry || null),
+  emailDailyLimit: z.coerce.number().int().min(1).max(300),
+  emailFollowUpEnabled: z.boolean(),
+  emailFollowUpDelays: z.array(z.coerce.number().int().min(1).max(30)).length(3)
+    .refine((days) => days[0] < days[1] && days[1] < days[2], "I follow-up devono essere in ordine crescente"),
 });
 
 function value(formData: FormData, key: string) {
@@ -30,6 +38,13 @@ export async function updateSettingsAction(formData: FormData) {
     cronCategory: value(formData, "cronCategory"),
     cronLocation: value(formData, "cronLocation"),
     cronRegion: value(formData, "cronRegion"),
+    emailEnabled: formData.get("emailEnabled") === "on",
+    emailSenderName: value(formData, "emailSenderName"),
+    emailSenderEmail: value(formData, "emailSenderEmail"),
+    emailReplyTo: value(formData, "emailReplyTo"),
+    emailDailyLimit: value(formData, "emailDailyLimit"),
+    emailFollowUpEnabled: formData.get("emailFollowUpEnabled") === "on",
+    emailFollowUpDelays: [value(formData, "followUpDay1"), value(formData, "followUpDay2"), value(formData, "followUpDay3")],
   });
   if (!parsed.success) {
     redirect(`/settings?error=${encodeURIComponent(parsed.error.issues[0]?.message ?? "Dati non validi")}`);
@@ -45,6 +60,13 @@ export async function updateSettingsAction(formData: FormData) {
       cron_category: parsed.data.cronCategory,
       cron_location: parsed.data.cronLocation,
       cron_region: parsed.data.cronRegion,
+      email_enabled: parsed.data.emailEnabled,
+      email_sender_name: parsed.data.emailSenderName,
+      email_sender_email: parsed.data.emailSenderEmail,
+      email_reply_to: parsed.data.emailReplyTo,
+      email_daily_limit: parsed.data.emailDailyLimit,
+      email_follow_up_enabled: parsed.data.emailFollowUpEnabled,
+      email_follow_up_delays: parsed.data.emailFollowUpDelays,
     })
     .eq("id", 1);
   if (error) redirect("/settings?error=Impostazioni%20non%20salvate");
