@@ -405,6 +405,14 @@ export type Database = {
         };
         Returns: Json;
       };
+      record_manual_outreach: {
+        Args: {
+          p_lead_id: string;
+          p_channel: string;
+          p_message: string;
+        };
+        Returns: undefined;
+      };
     };
     Enums: {
       lead_source: "manual" | "csv" | "google_places";

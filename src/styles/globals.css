@@ -1993,6 +1993,113 @@ h2 {
   gap: 6px;
 }
 
+.settings-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(240px, 320px);
+  align-items: start;
+  gap: 14px;
+  margin-top: 28px;
+}
+
+.settings-form-panel,
+.settings-form,
+.settings-security {
+  display: grid;
+  gap: 18px;
+}
+
+.settings-form {
+  max-width: 680px;
+}
+
+.settings-security {
+  grid-template-columns: 28px minmax(0, 1fr);
+}
+
+.settings-security p {
+  margin: 5px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.outreach-panel,
+.outreach-composer,
+.outreach-record {
+  display: grid;
+  gap: 16px;
+}
+
+.outreach-generate {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.outreach-generate > div {
+  display: grid;
+  gap: 3px;
+}
+
+.outreach-generate span,
+.outreach-draft-meta {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.outreach-draft-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.outreach-record textarea {
+  width: 100%;
+  resize: vertical;
+}
+
+.outreach-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.disabled-control {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.outreach-queue {
+  margin-top: 28px;
+}
+
+.outreach-list {
+  border-top: 1px solid var(--line);
+}
+
+.outreach-row {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr) auto minmax(140px, auto) auto 18px;
+  align-items: center;
+  gap: 12px;
+  min-height: 66px;
+  border-bottom: 1px solid var(--line);
+  color: inherit;
+}
+
+.outreach-row:hover {
+  background: var(--panel-soft);
+}
+
+.outreach-phone {
+  color: var(--muted);
+  font-size: 12px;
+}
+
 .candidate-sources a {
   border: 1px solid var(--line);
   border-radius: 6px;
@@ -2253,6 +2360,25 @@ h2 {
 
   .candidate-review-grid {
     grid-template-columns: 1fr;
+  }
+
+  .settings-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .outreach-generate {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .outreach-row {
+    grid-template-columns: 36px minmax(0, 1fr) 18px;
+  }
+
+  .outreach-row .status-badge,
+  .outreach-row .outreach-phone,
+  .outreach-row > strong {
+    display: none;
   }
 
   .candidate-live-summary {

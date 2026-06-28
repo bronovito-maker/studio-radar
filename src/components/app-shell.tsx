@@ -27,8 +27,8 @@ const navigation = [
   { id: "leads", label: "Lead", href: "/leads", icon: ContactRound, enabled: true },
   { id: "search", label: "Ricerca", href: "/search", icon: Search, enabled: true },
   { id: "import", label: "Importa", href: "/import", icon: Upload, enabled: true },
-  { id: "outreach", label: "Outreach", href: "/outreach", icon: CalendarCheck, enabled: false },
-  { id: "settings", label: "Impostazioni", href: "/settings", icon: Settings, enabled: false },
+  { id: "outreach", label: "Outreach", href: "/outreach", icon: CalendarCheck, enabled: true },
+  { id: "settings", label: "Impostazioni", href: "/settings", icon: Settings, enabled: true, adminOnly: true },
 ] as const;
 
 export function AppShell({ active, eyebrow, title, viewer, actions, children }: AppShellProps) {
@@ -50,11 +50,12 @@ export function AppShell({ active, eyebrow, title, viewer, actions, children }: 
         <nav className="nav-list">
           {navigation.map((item) => {
             const Icon = item.icon;
+            const enabled = item.enabled && (!("adminOnly" in item) || viewer.role === "admin");
             const className = `nav-item${active === item.id ? " active" : ""}${
-              item.enabled ? "" : " disabled"
+              enabled ? "" : " disabled"
             }`;
 
-            return item.enabled ? (
+            return enabled ? (
               <Link className={className} href={item.href} key={item.id}>
                 <Icon size={18} aria-hidden="true" />
                 {item.label}

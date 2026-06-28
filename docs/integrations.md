@@ -66,6 +66,9 @@ In produzione applicare anche una restrizione adatta al backend e monitorare quo
 ### Uso MVP
 
 - Link `wa.me` generato lato client/server con testo codificato.
+- Bozza OpenAI basata esclusivamente sui dati e sulle evidenze gia presenti nel CRM.
+- Booking link globale aggiunto dal CRM dopo la generazione AI.
+- Conferma manuale separata dall'apertura di WhatsApp; solo la conferma aggiorna stato e audit.
 - L'utente decide manualmente se inviare.
 
 ### Futuro

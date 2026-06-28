@@ -45,6 +45,8 @@ L'analisi viene avviata manualmente dalla scheda lead. La ricerca web OpenAI ric
 
 L'AI resta un secondo livello controllato: non crea lead, non cambia autonomamente i dati anagrafici e non invia messaggi.
 
+OpenAI prepara inoltre bozze outreach usando soltanto dati ed evidenze gia salvati nel CRM. La bozza e modificabile, non contiene il booking link generato dal modello e non aggiorna lo stato del lead finche l'operatore non registra manualmente il contatto.
+
 ## Score ibrido
 
 Versione corrente: `hybrid-v2026.06.28-1`.

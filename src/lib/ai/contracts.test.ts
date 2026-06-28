@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { candidateEnrichmentSchema, normalizeWebsiteEvidence, websiteAssessmentSchema } from "./contracts";
+import { candidateEnrichmentSchema, normalizeWebsiteEvidence, outreachDraftSchema, websiteAssessmentSchema } from "./contracts";
 
 describe("website AI contracts", () => {
   it("normalizes and bounds website evidence", () => {
@@ -82,5 +82,14 @@ describe("website AI contracts", () => {
       missingEvidence: [],
       sources: ["https://example.com"],
     }).success).toBe(false);
+  });
+
+  it("accepts a concise outreach draft with traceable facts", () => {
+    expect(outreachDraftSchema.safeParse({
+      message: "Buongiorno, abbiamo notato un possibile miglioramento nel percorso di prenotazione. Possiamo condividere due spunti concreti in un breve confronto?",
+      confidence: 0.78,
+      factsUsed: ["Prenotazione indicata solo via telefono"],
+      cautions: ["Verificare il referente"],
+    }).success).toBe(true);
   });
 });

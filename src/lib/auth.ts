@@ -34,3 +34,9 @@ export async function requireViewer(): Promise<Viewer> {
     role: profile.role,
   };
 }
+
+export async function requireAdmin(): Promise<Viewer> {
+  const viewer = await requireViewer();
+  if (viewer.role !== "admin") redirect("/?error=Accesso%20riservato%20agli%20amministratori");
+  return viewer;
+}

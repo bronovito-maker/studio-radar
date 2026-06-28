@@ -2,6 +2,7 @@ import { z } from "zod";
 
 export const WEBSITE_ASSESSMENT_VERSION = "website-assessment-v2026.06.28-2";
 export const CANDIDATE_ENRICHMENT_VERSION = "candidate-enrichment-v2026.06.28-1";
+export const OUTREACH_DRAFT_VERSION = "outreach-draft-v2026.06.28-1";
 const httpUrlSchema = z.string().max(2048).regex(/^https?:\/\/[^\s]+$/);
 
 export const serviceSlugSchema = z.enum([
@@ -62,6 +63,15 @@ export const candidateEnrichmentSchema = z.object({
 });
 
 export type CandidateEnrichment = z.infer<typeof candidateEnrichmentSchema>;
+
+export const outreachDraftSchema = z.object({
+  message: z.string().min(40).max(900),
+  confidence: z.number().min(0).max(1),
+  factsUsed: z.array(z.string().min(1).max(160)).max(6),
+  cautions: z.array(z.string().min(1).max(160)).max(4),
+});
+
+export type OutreachDraft = z.infer<typeof outreachDraftSchema>;
 
 export function normalizeWebsiteEvidence(input: WebsiteEvidence): WebsiteEvidence {
   return {

@@ -6,6 +6,8 @@ import {
   candidateEnrichmentSchema,
   CANDIDATE_ENRICHMENT_VERSION,
   normalizeWebsiteEvidence,
+  OUTREACH_DRAFT_VERSION,
+  outreachDraftSchema,
   WEBSITE_ASSESSMENT_VERSION,
   websiteAssessmentSchema,
   type WebsiteAssessment,
@@ -233,6 +235,60 @@ export async function enrichCandidateFromOfficialWebsite(input: {
       domain,
       model,
       promptVersion: CANDIDATE_ENRICHMENT_VERSION,
+      responseId: response.id,
+    };
+  } catch (error) {
+    if (error instanceof AiAnalysisError) throw error;
+    throw new AiAnalysisError("REQUEST_FAILED");
+  }
+}
+
+export async function generateOutreachDraftWithOpenAi(input: {
+  businessName: string;
+  category: string;
+  city: string;
+  recommendedService: string;
+  evidenceSummary: string;
+  opportunities: string[];
+  outreachAngle: string;
+}) {
+  const apiKey = process.env.OPENAI_API_KEY?.trim();
+  if (!apiKey) throw new AiAnalysisError("NOT_CONFIGURED");
+
+  const model = process.env.AI_SCORING_MODEL?.trim() || DEFAULT_OPENAI_MODEL;
+  const client = new OpenAI({ apiKey, timeout: 25_000, maxRetries: 1 });
+  try {
+    const response = await client.responses.parse({
+      model,
+      store: false,
+      reasoning: { effort: "low" },
+      max_output_tokens: 900,
+      input: [
+        {
+          role: "system",
+          content: [
+            "Scrivi una prima bozza WhatsApp B2B in italiano per Studio Radar.",
+            "Il tono deve essere professionale, elegante, consulenziale e umano.",
+            "Usa soltanto i fatti forniti. Non inventare problemi, risultati, clienti, urgenze o dettagli tecnici.",
+            "Non usare prezzi, emoji, markdown, superlativi, pressione commerciale o formule da spam.",
+            "Non dichiarare di aver svolto un audit completo: parla di una prima osservazione.",
+            "Mantieni il messaggio tra 350 e 650 caratteri, con saluto, osservazione concreta, proposta di valore e domanda finale semplice.",
+            "Non inserire link: il booking link viene aggiunto separatamente dal CRM.",
+          ].join(" "),
+        },
+        { role: "user", content: JSON.stringify(input) },
+      ],
+      text: {
+        format: zodTextFormat(outreachDraftSchema, "outreach_draft"),
+        verbosity: "low",
+      },
+    });
+
+    if (!response.output_parsed) throw new AiAnalysisError("INVALID_OUTPUT");
+    return {
+      draft: response.output_parsed,
+      model,
+      promptVersion: OUTREACH_DRAFT_VERSION,
       responseId: response.id,
     };
   } catch (error) {

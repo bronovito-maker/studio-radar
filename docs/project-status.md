@@ -17,7 +17,7 @@ Il CRM e eseguibile e utilizzabile per inserimento manuale o CSV, discovery live
 | 2 - CRM core | Completata | Dashboard reale, lista e dettaglio lead, inserimento, stati, note e audit |
 | 3 - Import e deduplica | Completata | CSV, mapping, preview, deduplica concorrente ed export filtrato |
 | 4 - Discovery e scoring | Completata | Ricerca, shortlist, arricchimento verificabile, conversione lead e scoring completati |
-| 5 - Outreach manuale | Non iniziata | Template WhatsApp, link `wa.me` e timeline |
+| 5 - Outreach manuale | Completata | Bozza OpenAI modificabile, fallback, `wa.me`, booking globale e audit |
 | 6 - Cron controllato | Non iniziata | Endpoint protetto, lock e scan runs |
 | 7 - Hardening | Parziale | RLS e controlli base presenti; test E2E, rate limit e logging da completare |
 
@@ -57,6 +57,9 @@ Il CRM e eseguibile e utilizzabile per inserimento manuale o CSV, discovery live
 - RPC ibrida verificata con utente autenticato e rollback completo; nessun dato sintetico persistito.
 - Flusso shortlist → verifica → lead completato: OpenAI estrae dati solo dal sito ufficiale, l'utente conferma e la RPC crea il lead con deduplica e audit atomici.
 - Conversione candidato verificata sui casi creazione e duplicato con rollback; nessun dato sintetico persistito.
+- Coda outreach e composer WhatsApp completati: bozza OpenAI modificabile, fallback deterministico e booking link globale.
+- Registrazione manuale del contatto verificata: stato, timestamp e audit atomici con rollback completo.
+- Pagina impostazioni amministrativa disponibile per booking URL e soglia di qualificazione.
 
 ## Auth ancora da chiudere
 
@@ -74,8 +77,9 @@ Un admin carica un CSV, associa le colonne, vede righe valide e duplicati, confe
 
 ## Prossima milestone dimostrabile
 
-Un operatore apre un lead qualificato, genera una bozza outreach consulenziale, la modifica e apre WhatsApp con il booking link globale; il CRM registra il contatto nella timeline.
+Un amministratore verifica i permessi di un collaboratore e il percorso completo viene coperto da test E2E: login, discovery, conversione, scoring e outreach.
 
 ## Blocchi esterni non urgenti
 
-- Booking URL e dominio di produzione, necessari prima del deploy pubblico.
+- Dominio di produzione, necessario prima del deploy pubblico.
+- Booking URL definitivo, configurabile dalla pagina Impostazioni.

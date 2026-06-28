@@ -3,7 +3,9 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { AiAnalysisError, analyzeWebsiteDomainWithOpenAi } from "@/lib/ai/openai";
+import { websiteAssessmentSchema } from "@/lib/ai/contracts";
+import { AiAnalysisError, analyzeWebsiteDomainWithOpenAi, generateOutreachDraftWithOpenAi } from "@/lib/ai/openai";
+import { requireViewer } from "@/lib/auth";
 import { isLeadStatus } from "@/lib/crm";
 import { scoreLead } from "@/lib/scoring/deterministic";
 import { combineScores } from "@/lib/scoring/hybrid";
@@ -22,6 +24,14 @@ const createLeadSchema = z.object({
   websiteUrl: z.string().trim().max(500).refine((value) => !value || z.url().safeParse(value).success, "URL non valido").transform((value) => value || null),
   estimatedValue: z.coerce.number().min(0).max(10_000_000),
 });
+
+export type OutreachDraftState = {
+  status: "idle" | "ready" | "error";
+  message?: string;
+  provider?: "openai" | "template";
+  confidence?: number;
+  cautions?: string[];
+};
 
 function value(formData: FormData, key: string) {
   const candidate = formData.get(key);
@@ -248,4 +258,89 @@ export async function analyzeLeadWithOpenAi(formData: FormData) {
   revalidatePath("/leads");
   revalidatePath(`/leads/${lead.id}`);
   redirect(withMessage(`/leads/${lead.id}`, "success", `Analisi OpenAI completata: ${hybrid.score}/100`));
+}
+
+export async function generateOutreachDraftAction(
+  _previousState: OutreachDraftState,
+  formData: FormData,
+): Promise<OutreachDraftState> {
+  await requireViewer();
+  const idResult = z.uuid().safeParse(value(formData, "leadId"));
+  if (!idResult.success) return { status: "error", message: "Lead non valido." };
+
+  const supabase = await createClient();
+  const [{ data: lead }, { data: latestScore }, { data: settings }] = await Promise.all([
+    supabase.from("leads").select("id, business_name, category, city, recommended_service_id").eq("id", idResult.data).single(),
+    supabase.from("lead_scores").select("input_snapshot, recommended_service_id").eq("lead_id", idResult.data).order("created_at", { ascending: false }).limit(1).maybeSingle(),
+    supabase.from("settings").select("booking_url").eq("id", 1).single(),
+  ]);
+  if (!lead) return { status: "error", message: "Lead non disponibile." };
+
+  const serviceId = latestScore?.recommended_service_id ?? lead.recommended_service_id;
+  const { data: service } = serviceId
+    ? await supabase.from("services").select("name").eq("id", serviceId).maybeSingle()
+    : { data: null };
+  const snapshot = latestScore?.input_snapshot;
+  const assessmentValue = snapshot && !Array.isArray(snapshot) && typeof snapshot === "object"
+    ? snapshot.assessment
+    : null;
+  const assessment = websiteAssessmentSchema.safeParse(assessmentValue);
+  const evidence = assessment.success ? assessment.data : null;
+  const recommendedService = service?.name ?? "miglioramento della presenza digitale";
+  const fallback = `Buongiorno, ho osservato la presenza digitale di ${lead.business_name} e credo possa esserci spazio per rendere più efficace il percorso online. In Studio Radar lavoriamo su ${recommendedService.toLowerCase()} con un approccio concreto e misurabile. Mi farebbe piacere condividere due spunti mirati: può avere senso un breve confronto?`;
+
+  let draft = fallback;
+  let provider: "openai" | "template" = "template";
+  let confidence = 0.45;
+  let cautions: string[] = evidence ? [] : ["Bozza basata sui soli dati anagrafici del lead"];
+  try {
+    const result = await generateOutreachDraftWithOpenAi({
+      businessName: lead.business_name,
+      category: lead.category ?? "non indicata",
+      city: lead.city ?? "non indicata",
+      recommendedService,
+      evidenceSummary: evidence?.summary ?? "Nessuna analisi del sito ancora disponibile",
+      opportunities: evidence?.opportunities.map((opportunity) => `${opportunity.evidence} — ${opportunity.rationale}`) ?? [],
+      outreachAngle: evidence?.outreachAngle ?? "Proporre un confronto esplorativo senza affermazioni non verificate",
+    });
+    draft = result.draft.message;
+    provider = "openai";
+    confidence = result.draft.confidence;
+    cautions = result.draft.cautions;
+  } catch {
+    // The deterministic template keeps outreach available when the provider is unavailable.
+  }
+
+  if (settings?.booking_url) {
+    draft = `${draft}\n\nSe preferisce, può scegliere qui un momento comodo: ${settings.booking_url}`;
+  }
+  return { status: "ready", message: draft, provider, confidence, cautions };
+}
+
+export async function recordManualOutreachAction(formData: FormData) {
+  await requireViewer();
+  const parsed = z.object({
+    leadId: z.uuid(),
+    message: z.string().trim().min(10).max(2000),
+  }).safeParse({
+    leadId: value(formData, "leadId"),
+    message: value(formData, "message"),
+  });
+  if (!parsed.success) redirect(withMessage("/leads", "error", "Messaggio outreach non valido"));
+
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("record_manual_outreach", {
+    p_lead_id: parsed.data.leadId,
+    p_channel: "whatsapp",
+    p_message: parsed.data.message,
+  });
+  if (error) {
+    redirect(withMessage(`/leads/${parsed.data.leadId}`, "error", "Contatto non registrato. Verifica lo stato del lead."));
+  }
+
+  revalidatePath("/");
+  revalidatePath("/leads");
+  revalidatePath("/outreach");
+  revalidatePath(`/leads/${parsed.data.leadId}`);
+  redirect(withMessage(`/leads/${parsed.data.leadId}`, "success", "Contatto WhatsApp registrato"));
 }

@@ -1,8 +1,9 @@
-import { ArrowLeft, Calendar, ExternalLink, Gauge, Globe, Mail, MapPin, Phone, RefreshCw, Save, Sparkles } from "lucide-react";
+import { ArrowLeft, Calendar, ExternalLink, Gauge, Globe, Mail, MapPin, MessageCircle, Phone, RefreshCw, Save, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
 import { SubmitButton } from "@/components/submit-button";
+import { OutreachComposer } from "@/components/outreach-composer";
 import { websiteAssessmentSchema, type WebsiteAssessment } from "@/lib/ai/contracts";
 import { requireViewer } from "@/lib/auth";
 import { formatCurrency, formatDate, LEAD_STATUSES, SOURCE_LABELS, STATUS_LABELS } from "@/lib/crm";
@@ -23,6 +24,7 @@ const EVENT_LABELS: Record<string, string> = {
   deterministic_score_created: "Score deterministico calcolato",
   hybrid_score_created: "Score ibrido OpenAI calcolato",
   candidate_converted: "Candidato verificato e aggiunto al CRM",
+  manual_outreach_recorded: "Contatto manuale registrato",
 };
 
 const SIGNAL_LABELS: Record<string, string> = {
@@ -124,6 +126,11 @@ export default async function LeadDetailPage({ params, searchParams }: LeadDetai
               <dl className="ai-details"><div><dt>Approccio consigliato</dt><dd>{assessment.outreachAngle}</dd></div>{assessment.missingEvidence.length ? <div><dt>Da verificare</dt><dd>{assessment.missingEvidence.join(" · ")}</dd></div> : null}{assessment.risks.length ? <div><dt>Cautele</dt><dd>{assessment.risks.join(" · ")}</dd></div> : null}</dl>
             </article>
           ) : null}
+
+          <article className="panel outreach-panel">
+            <div className="panel-header"><div><p className="eyebrow">Contatto consulenziale</p><h2>Outreach WhatsApp</h2></div><MessageCircle size={19} /></div>
+            <OutreachComposer leadId={lead.id} businessName={lead.business_name} initialPhone={lead.phone ?? ""} />
+          </article>
 
           <article className="panel">
             <div className="panel-header"><div><p className="eyebrow">Contesto interno</p><h2>Note</h2></div></div>
