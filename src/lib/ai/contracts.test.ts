@@ -25,11 +25,13 @@ describe("website AI contracts", () => {
       opportunities: [{
         service: "booking-conversione",
         evidence: "Il sito invita a telefonare per prenotare.",
+        sourceUrl: "https://example.com/prenota",
         rationale: "Un flusso online ridurrebbe l'attrito.",
       }],
       risks: [],
       missingEvidence: ["Dati sul tasso di conversione"],
       outreachAngle: "Proporre una verifica del percorso di prenotazione.",
+      sources: ["https://example.com/prenota"],
     }).success).toBe(true);
   });
 
@@ -43,6 +45,7 @@ describe("website AI contracts", () => {
       risks: [],
       missingEvidence: [],
       outreachAngle: "Test",
+      sources: ["https://example.com"],
     });
     expect(result.success).toBe(false);
   });

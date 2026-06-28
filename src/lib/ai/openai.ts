@@ -6,8 +6,11 @@ import {
   normalizeWebsiteEvidence,
   WEBSITE_ASSESSMENT_VERSION,
   websiteAssessmentSchema,
+  type WebsiteAssessment,
+  type WebsiteDomainInput,
   type WebsiteEvidence,
 } from "@/lib/ai/contracts";
+import { officialWebsiteDomain, sourceBelongsToDomain } from "@/lib/ai/domain";
 
 export const DEFAULT_OPENAI_MODEL = "gpt-5.4-mini";
 
@@ -20,6 +23,16 @@ export class AiAnalysisError extends Error {
 
 export function isOpenAiConfigured() {
   return Boolean(process.env.OPENAI_API_KEY?.trim());
+}
+
+function validateAssessmentSources(assessment: WebsiteAssessment, domain: string) {
+  const sources = [
+    ...assessment.sources,
+    ...assessment.opportunities.map((opportunity) => opportunity.sourceUrl),
+  ];
+  if (!sources.every((source) => sourceBelongsToDomain(source, domain))) {
+    throw new AiAnalysisError("INVALID_OUTPUT");
+  }
 }
 
 export async function analyzeWebsiteWithOpenAi(rawEvidence: WebsiteEvidence) {
@@ -65,6 +78,77 @@ export async function analyzeWebsiteWithOpenAi(rawEvidence: WebsiteEvidence) {
       model,
       promptVersion: WEBSITE_ASSESSMENT_VERSION,
       responseId: response.id,
+    };
+  } catch (error) {
+    if (error instanceof AiAnalysisError) throw error;
+    throw new AiAnalysisError("REQUEST_FAILED");
+  }
+}
+
+export async function analyzeWebsiteDomainWithOpenAi(input: WebsiteDomainInput) {
+  const apiKey = process.env.OPENAI_API_KEY?.trim();
+  if (!apiKey) throw new AiAnalysisError("NOT_CONFIGURED");
+
+  let domain: string;
+  try {
+    domain = officialWebsiteDomain(input.websiteUrl);
+  } catch (error) {
+    if (error instanceof AiAnalysisError) throw error;
+    throw new AiAnalysisError("INVALID_OUTPUT");
+  }
+
+  const model = process.env.AI_SCORING_MODEL?.trim() || DEFAULT_OPENAI_MODEL;
+  const client = new OpenAI({ apiKey, timeout: 35_000, maxRetries: 1 });
+
+  try {
+    const response = await client.responses.parse({
+      model,
+      store: false,
+      reasoning: { effort: "low" },
+      max_output_tokens: 2_200,
+      tools: [{
+        type: "web_search",
+        filters: { allowed_domains: [domain] },
+        search_context_size: "low",
+      }],
+      tool_choice: "required",
+      input: [
+        {
+          role: "system",
+          content: [
+            "Sei l'analista commerciale di Studio Radar, agenzia italiana di servizi digitali B2B.",
+            `Consulta esclusivamente il dominio ufficiale ${domain} e le sue sottopagine.`,
+            "Non usare directory, social network, mappe, recensioni esterne o conoscenze pregresse.",
+            "Non inventare problemi, tecnologie, prestazioni, contatti o bisogni.",
+            "Ogni opportunita deve citare una prova osservabile e l'URL esatto della pagina che la supporta.",
+            "Lo score misura l'opportunita commerciale per Studio Radar, non la qualita generale dell'azienda.",
+            "Inserisci in missingEvidence tutto cio che non puoi verificare.",
+            "Suggerisci un approccio professionale, consulenziale e non aggressivo.",
+          ].join(" "),
+        },
+        {
+          role: "user",
+          content: JSON.stringify({
+            businessName: input.businessName.trim().slice(0, 200),
+            category: input.category.trim().slice(0, 200),
+            officialWebsite: input.websiteUrl.trim().slice(0, 2048),
+          }),
+        },
+      ],
+      text: {
+        format: zodTextFormat(websiteAssessmentSchema, "website_assessment"),
+        verbosity: "low",
+      },
+    });
+
+    if (!response.output_parsed) throw new AiAnalysisError("INVALID_OUTPUT");
+    validateAssessmentSources(response.output_parsed, domain);
+    return {
+      assessment: response.output_parsed,
+      model,
+      promptVersion: WEBSITE_ASSESSMENT_VERSION,
+      responseId: response.id,
+      domain,
     };
   } catch (error) {
     if (error instanceof AiAnalysisError) throw error;

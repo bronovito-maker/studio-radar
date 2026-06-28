@@ -10,31 +10,26 @@ Lo scoring non deve essere opaco: ogni valutazione deve essere tracciabile e ric
 
 ### 1. Score deterministico - implementato
 
-Versione corrente: `deterministic-v2026.06.27-1`.
+Versione corrente: `deterministic-v2026.06.28-2`.
 
 E calcolato senza AI, quindi e economico, spiegabile e perfettamente ripetibile. Ogni esecuzione viene salvata nello storico `lead_scores`; il record precedente non viene sovrascritto.
 
-Pesi correnti:
+Componenti correnti:
 
-- base attivita: `+15`;
-- categoria ad alto valore: `+16`; categoria media: `+10`; categoria assente: `-5`;
-- Emilia-Romagna: `+12`; Toscana: `+8`; Lombardia: `+3`;
-- sito assente: `+18`; sito presente: `+4`;
-- rating almeno 4,2 con almeno 30 recensioni: `+16`;
-- rating almeno 4 con almeno 10 recensioni: `+10`;
-- almeno 5 recensioni: `+4`; nessuna recensione: `-6`;
-- rating inferiore a 3,5: `-10`;
-- telefono presente: `+6`; assente: `-5`; email presente: `+3`;
-- booking assente in una categoria prenotabile: `+7`;
-- attivita temporaneamente chiusa: `-20`; definitivamente chiusa: score `0`.
+- coerenza mercato, massimo `30`: categoria e priorita geografica;
+- solidita attivita, massimo `25`: stato operativo e reputazione verificabile;
+- opportunita digitale, massimo `30`: sito assente o da analizzare e gap booking;
+- contattabilita, massimo `15`: telefono ed email disponibili.
+
+Un sito presente ma non ancora analizzato riceve solo un valore prudenziale. Il booking non verificato non viene interpretato come assente. Un'attivita temporaneamente chiusa non puo superare 35; una definitivamente chiusa riceve 0.
 
 Il risultato e sempre limitato tra 0 e 100. A parita di input, output e motivazione restano identici.
 
-### 2. Analisi AI OpenAI
+### 2. Analisi AI OpenAI - implementata
 
 Usato per:
 
-- analizzare il testo verificabile del sito ufficiale;
+- cercare contenuti esclusivamente nel dominio del sito ufficiale;
 - sintetizzare punti di forza e opportunita digitali;
 - suggerire il servizio con prove esplicite;
 - preparare un angolo outreach consulenziale;
@@ -44,9 +39,22 @@ Usato per:
 
 OpenAI tramite Responses API e Structured Outputs. Il modello iniziale e `gpt-5.4-mini`, configurabile con `AI_SCORING_MODEL`; `gpt-5.5` resta disponibile per analisi premium o casi complessi.
 
-Versione prompt iniziale: `website-assessment-v2026.06.28-1`.
+Versione prompt corrente: `website-assessment-v2026.06.28-2`.
 
-L'AI resta un secondo livello consultivo: non modifica lo score deterministico, non crea lead senza conferma e non invia messaggi.
+L'analisi viene avviata manualmente dalla scheda lead. La ricerca web OpenAI riceve un filtro `allowed_domains` contenente soltanto il dominio ufficiale; directory, social, mappe e recensioni esterne sono escluse. Ogni opportunita deve includere un URL fonte, nuovamente validato dal server prima del salvataggio.
+
+L'AI resta un secondo livello controllato: non crea lead, non cambia autonomamente i dati anagrafici e non invia messaggi.
+
+## Score ibrido
+
+Versione corrente: `hybrid-v2026.06.28-1`.
+
+OpenAI entra nel punteggio finale soltanto quando:
+
+- la confidenza e almeno 0,60;
+- esiste almeno un'opportunita con evidenza esplicita dal sito ufficiale.
+
+Il peso AI varia dal 39% al 45% in base alla confidenza; il resto rimane deterministico. Se le prove non sono sufficienti, il peso AI e 0 e lo score base resta invariato. Il servizio consigliato dall'AI prevale solo con confidenza almeno 0,70.
 
 ## Output richiesto
 
@@ -59,28 +67,31 @@ L'AI resta un secondo livello consultivo: non modifica lo score deterministico, 
   "opportunities": [],
   "risks": [],
   "missingEvidence": [],
-  "outreachAngle": "Proporre una verifica consulenziale del percorso di prenotazione."
+  "outreachAngle": "Proporre una verifica consulenziale del percorso di prenotazione.",
+  "sources": ["https://azienda.example/prenotazioni"]
 }
 ```
 
 ## Soglie iniziali
 
-- 0-39: freddo, non prioritario.
-- 40-59: tiepido, da valutare.
-- 60-79: buono, da contattare.
+- 0-44: freddo, non prioritario.
+- 45-64: tiepido, da valutare.
+- 65-79: buono, da contattare.
 - 80-100: prioritario.
 
-La soglia di qualifica iniziale e 50, configurabile in `settings.default_score_threshold`. Un lead nello stato `new` che supera la soglia passa a `qualified`; gli altri stati non vengono modificati automaticamente.
+La soglia di qualifica e 65, configurabile in `settings.default_score_threshold`. Un lead nello stato `new` che raggiunge la soglia passa a `qualified`; gli altri stati non vengono modificati automaticamente.
 
 La strategia commerciale e "pochi lead ma buoni": lo scoring deve privilegiare precisione e qualita rispetto alla quantita.
 
 ## Guardrail
 
 - Se output AI non e JSON valido, non aggiornare score AI.
+- Se una fonte non appartiene al dominio ufficiale, scartare l'intera analisi.
 - Se confidenza bassa, mostra warning in UI.
 - Non cancellare score storici.
 - Non usare AI per inventare dati mancanti.
 - Non contattare automaticamente in base allo score.
+- Non eseguire analisi batch finche qualita e costo del flusso manuale non sono misurati.
 
 ## Versionamento
 
@@ -93,5 +104,5 @@ deterministic-vYYYY.MM.DD-N
 Esempio:
 
 ```text
-deterministic-v2026.06.27-1
+deterministic-v2026.06.28-2
 ```

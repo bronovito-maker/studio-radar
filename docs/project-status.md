@@ -4,9 +4,9 @@ Ultimo aggiornamento: 28 giugno 2026.
 
 ## Sintesi
 
-Studio Radar ha completato documentazione, fondazioni tecniche, CRM core, import CSV e score deterministico. La discovery Google Places e operativa: ricerca live, normalizzazione, score e controllo duplicati sono implementati e verificati con dati reali.
+Studio Radar ha completato documentazione, fondazioni tecniche, CRM core, import CSV e scoring ibrido. La discovery Google Places e operativa: ricerca live, normalizzazione, score e controllo duplicati sono implementati e verificati con dati reali.
 
-Il CRM e eseguibile e utilizzabile per inserimento manuale o CSV, discovery live, gestione, scoring ed export dei lead. Il flusso MVP completo richiede ancora la decisione sull'acquisizione conforme dei risultati e l'outreach.
+Il CRM e eseguibile e utilizzabile per inserimento manuale o CSV, discovery live, gestione, scoring deterministico, analisi OpenAI del sito ed export. Il flusso MVP completo richiede ancora l'arricchimento conforme dei candidati e l'outreach.
 
 ## Avanzamento roadmap
 
@@ -16,7 +16,7 @@ Il CRM e eseguibile e utilizzabile per inserimento manuale o CSV, discovery live
 | 1 - Fondazioni tecniche | Completata | Next.js, TypeScript strict, Supabase, migrazioni, RLS, Auth SSR e layout |
 | 2 - CRM core | Completata | Dashboard reale, lista e dettaglio lead, inserimento, stati, note e audit |
 | 3 - Import e deduplica | Completata | CSV, mapping, preview, deduplica concorrente ed export filtrato |
-| 4 - Discovery e scoring | In corso | Score, ricerca live e shortlist Place ID completati; resta l'arricchimento da fonte indipendente |
+| 4 - Discovery e scoring | In corso | Score deterministico e ibrido OpenAI, ricerca live e shortlist completati; resta l'arricchimento pre-creazione |
 | 5 - Outreach manuale | Non iniziata | Template WhatsApp, link `wa.me` e timeline |
 | 6 - Cron controllato | Non iniziata | Endpoint protetto, lock e scan runs |
 | 7 - Hardening | Parziale | RLS e controlli base presenti; test E2E, rate limit e logging da completare |
@@ -41,7 +41,9 @@ Il CRM e eseguibile e utilizzabile per inserimento manuale o CSV, discovery live
 - Deduplica per email, telefono, dominio e nome+citta, ricontrollata in conferma atomica.
 - Export CSV filtrato con neutralizzazione delle formule per fogli di calcolo.
 - Privilegi eccedenti (`TRUNCATE`, `REFERENCES`, `TRIGGER`) rimossi da tutte le tabelle pubbliche.
-- Score deterministico versionato, testato e salvato atomicamente con servizio consigliato e audit.
+- Score deterministico v2 scomposto in mercato, solidita, opportunita digitale e contattabilita, salvato atomicamente con audit.
+- Score ibrido operativo: OpenAI pesa dal 39% al 45% solo con confidenza ed evidenze sufficienti.
+- Soglia automatica di qualifica alzata a 65 e verificata sui valori limite 64/65 con rollback.
 - Test Supabase dello score superato con utente autenticato e rollback completo.
 - Ricerca Google Places solo server, field mask minima, timeout, retry e gestione quota.
 - Risultati Places effimeri con attribuzioni; nel database restano solo metadati e conteggi della scansione.
@@ -50,7 +52,9 @@ Il CRM e eseguibile e utilizzabile per inserimento manuale o CSV, discovery live
 - Shortlist condivisa protetta da RLS: salva solo Place ID e contesto interno, con dettagli ricaricati live e rimozione controllata.
 - Place Details verificato con una chiamata reale e field mask limitata ai dati necessari alla shortlist.
 - OpenAI scelto come provider AI; SDK ufficiale, Responses API e Structured Outputs configurati con modello default `gpt-5.4-mini`.
-- Contratto AI versionato e coperto da test; senza `OPENAI_API_KEY` il CRM resta operativo e l'analisi AI e disabilitata.
+- Contratto AI versionato e coperto da test; chiave, Structured Output e web search con `gpt-5.4-mini` verificati con chiamate sintetiche reali.
+- Analisi manuale disponibile nella scheda lead: ricerca limitata al dominio ufficiale, fonti obbligatorie validate server side e risultato salvato atomicamente.
+- RPC ibrida verificata con utente autenticato e rollback completo; nessun dato sintetico persistito.
 
 ## Auth ancora da chiudere
 
@@ -72,5 +76,4 @@ Un admin seleziona un candidato in shortlist, avvia l'arricchimento dal sito uff
 
 ## Blocchi esterni non urgenti
 
-- Chiave OpenAI, necessaria per il primo collaudo reale dell'analisi sito.
 - Booking URL e dominio di produzione, necessari prima del deploy pubblico.

@@ -3,8 +3,10 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
+import { AiAnalysisError, analyzeWebsiteDomainWithOpenAi } from "@/lib/ai/openai";
 import { isLeadStatus } from "@/lib/crm";
 import { scoreLead } from "@/lib/scoring/deterministic";
+import { combineScores } from "@/lib/scoring/hybrid";
 import { createClient } from "@/lib/supabase/server";
 import type { Json } from "@/types/database";
 
@@ -139,7 +141,7 @@ export async function scoreLeadDeterministically(formData: FormData) {
     websiteUrl: lead.website_url,
     rating: lead.rating,
     reviewCount: lead.review_count,
-    hasBooking: lead.has_booking,
+    hasBooking: lead.has_booking ? true : undefined,
     businessStatus: null,
   };
   const result = scoreLead(input);
@@ -152,7 +154,7 @@ export async function scoreLeadDeterministically(formData: FormData) {
     p_negative_signals: result.negativeSignals,
     p_confidence: result.confidence,
     p_version: result.version,
-    p_input_snapshot: input as unknown as Json,
+    p_input_snapshot: { input, components: result.components } as unknown as Json,
     p_recommended_service_slug: result.recommendedService,
   });
 
@@ -164,4 +166,86 @@ export async function scoreLeadDeterministically(formData: FormData) {
   revalidatePath("/leads");
   revalidatePath(`/leads/${lead.id}`);
   redirect(withMessage(`/leads/${lead.id}`, "success", `Score aggiornato: ${result.score}/100`));
+}
+
+export async function analyzeLeadWithOpenAi(formData: FormData) {
+  const idResult = z.uuid().safeParse(value(formData, "leadId"));
+  if (!idResult.success) redirect(withMessage("/leads", "error", "Lead non valido"));
+
+  const supabase = await createClient();
+  const { data: lead, error: leadError } = await supabase
+    .from("leads")
+    .select("id, business_name, region, category, phone, email, website_url, rating, review_count, has_booking")
+    .eq("id", idResult.data)
+    .single();
+
+  if (leadError || !lead || !lead.website_url) {
+    redirect(withMessage(`/leads/${idResult.data}`, "error", "Serve un sito ufficiale valido per l'analisi OpenAI"));
+  }
+
+  const input = {
+    businessName: lead.business_name,
+    region: lead.region,
+    category: lead.category,
+    phone: lead.phone,
+    email: lead.email,
+    websiteUrl: lead.website_url,
+    rating: lead.rating,
+    reviewCount: lead.review_count,
+    hasBooking: lead.has_booking ? true : undefined,
+    businessStatus: null,
+  };
+  const deterministic = scoreLead(input);
+
+  let analysis: Awaited<ReturnType<typeof analyzeWebsiteDomainWithOpenAi>>;
+  try {
+    analysis = await analyzeWebsiteDomainWithOpenAi({
+      businessName: lead.business_name,
+      category: lead.category ?? "non indicata",
+      websiteUrl: lead.website_url,
+    });
+  } catch (error) {
+    const message = error instanceof AiAnalysisError && error.code === "NOT_CONFIGURED"
+      ? "OpenAI non è configurato sul server"
+      : error instanceof AiAnalysisError && error.code === "INVALID_OUTPUT"
+        ? "Le fonti restituite da OpenAI non hanno superato i controlli"
+        : "Analisi OpenAI non riuscita. Riprova tra poco.";
+    redirect(withMessage(`/leads/${lead.id}`, "error", message));
+  }
+
+  const hybrid = combineScores(deterministic, analysis.assessment);
+  const { error } = await supabase.rpc("save_hybrid_score", {
+    p_lead_id: lead.id,
+    p_score: hybrid.score,
+    p_grade: hybrid.grade,
+    p_deterministic_score: hybrid.deterministicScore,
+    p_ai_score: analysis.assessment.advisoryScore,
+    p_reasoning: hybrid.reasoning,
+    p_positive_signals: deterministic.positiveSignals,
+    p_negative_signals: deterministic.negativeSignals,
+    p_confidence: hybrid.confidence,
+    p_model: analysis.model,
+    p_version: analysis.promptVersion,
+    p_input_snapshot: {
+      input,
+      components: deterministic.components,
+      assessment: analysis.assessment,
+      ai: {
+        domain: analysis.domain,
+        responseId: analysis.responseId,
+        aiWeight: hybrid.aiWeight,
+        hybridVersion: hybrid.version,
+      },
+    } as unknown as Json,
+    p_recommended_service_slug: hybrid.recommendedService,
+  });
+
+  if (error) {
+    redirect(withMessage(`/leads/${lead.id}`, "error", "Analisi completata ma non salvata. Riprova."));
+  }
+
+  revalidatePath("/");
+  revalidatePath("/leads");
+  revalidatePath(`/leads/${lead.id}`);
+  redirect(withMessage(`/leads/${lead.id}`, "success", `Analisi OpenAI completata: ${hybrid.score}/100`));
 }

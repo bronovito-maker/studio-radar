@@ -371,6 +371,24 @@ export type Database = {
         };
         Returns: string;
       };
+      save_hybrid_score: {
+        Args: {
+          p_lead_id: string;
+          p_score: number;
+          p_grade: Database["public"]["Enums"]["score_grade"];
+          p_deterministic_score: number;
+          p_ai_score: number;
+          p_reasoning: string;
+          p_positive_signals: string[];
+          p_negative_signals: string[];
+          p_confidence: number;
+          p_model: string;
+          p_version: string;
+          p_input_snapshot: Json;
+          p_recommended_service_slug: string;
+        };
+        Returns: string;
+      };
     };
     Enums: {
       lead_source: "manual" | "csv" | "google_places";

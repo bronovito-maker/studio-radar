@@ -1,14 +1,14 @@
 import { z } from "zod";
 
-export const WEBSITE_ASSESSMENT_VERSION = "website-assessment-v2026.06.28-1";
+export const WEBSITE_ASSESSMENT_VERSION = "website-assessment-v2026.06.28-2";
 
 export const serviceSlugSchema = z.enum([
   "sito-nuovo",
   "restyling-sito",
   "automazioni",
-  "ads-performance",
+  "ads-setup",
   "booking-conversione",
-  "branding-identita",
+  "branding-leggero",
 ]);
 
 export const websiteAssessmentSchema = z.object({
@@ -19,11 +19,13 @@ export const websiteAssessmentSchema = z.object({
   opportunities: z.array(z.object({
     service: serviceSlugSchema,
     evidence: z.string().min(1).max(300),
+    sourceUrl: z.url().max(2048),
     rationale: z.string().min(1).max(300),
   })).max(4),
   risks: z.array(z.string().min(1).max(240)).max(4),
   missingEvidence: z.array(z.string().min(1).max(160)).max(6),
   outreachAngle: z.string().min(1).max(500),
+  sources: z.array(z.url().max(2048)).min(1).max(8),
 });
 
 export type WebsiteAssessment = z.infer<typeof websiteAssessmentSchema>;
@@ -34,6 +36,12 @@ export type WebsiteEvidence = {
   sourceUrl: string;
   pageTitle: string;
   visibleText: string;
+};
+
+export type WebsiteDomainInput = {
+  businessName: string;
+  category: string;
+  websiteUrl: string;
 };
 
 export function normalizeWebsiteEvidence(input: WebsiteEvidence): WebsiteEvidence {

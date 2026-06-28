@@ -1,4 +1,4 @@
-export const DETERMINISTIC_SCORE_VERSION = "deterministic-v2026.06.27-1";
+export const DETERMINISTIC_SCORE_VERSION = "deterministic-v2026.06.28-2";
 
 export type DeterministicScoreInput = {
   businessName: string;
@@ -14,87 +14,43 @@ export type DeterministicScoreInput = {
 };
 
 export type ScoreGrade = "cold" | "warm" | "hot" | "priority";
+export type RecommendedService = "sito-nuovo" | "restyling-sito" | "booking-conversione" | "automazioni";
+
+export type ScoreComponent = {
+  key: "marketFit" | "businessStrength" | "digitalOpportunity" | "contactability";
+  label: string;
+  score: number;
+  maxScore: number;
+};
 
 export type DeterministicScoreResult = {
   score: number;
   grade: ScoreGrade;
-  recommendedService: "sito-nuovo" | "restyling-sito" | "booking-conversione" | "automazioni";
+  recommendedService: RecommendedService;
   reasoning: string;
   positiveSignals: string[];
   negativeSignals: string[];
+  components: ScoreComponent[];
   confidence: number;
   version: string;
 };
 
-type WeightedSignal = {
-  key: string;
-  points: number;
-  description: string;
-};
-
 const HIGH_VALUE_CATEGORY_TERMS = [
-  "dentist",
-  "dental",
-  "fisioterap",
-  "physiotherap",
-  "spa",
-  "beauty salon",
-  "centro estetico",
-  "lodging",
-  "hotel",
-  "agriturism",
-  "bed and breakfast",
-  "real estate",
-  "immobiliar",
-  "wedding",
-  "event venue",
-  "veterinar",
-  "lawyer",
-  "avvocat",
-  "interior design",
-  "car dealer",
-  "concessionari",
-  "poliambulator",
+  "dentist", "dental", "fisioterap", "physiotherap", "spa", "beauty salon",
+  "centro estetico", "lodging", "hotel", "agriturism", "bed and breakfast",
+  "real estate", "immobiliar", "wedding", "event venue", "veterinar",
+  "lawyer", "avvocat", "interior design", "car dealer", "concessionari", "poliambulator",
 ];
 
 const MEDIUM_VALUE_CATEGORY_TERMS = [
-  "restaurant",
-  "ristorant",
-  "trattoria",
-  "gym",
-  "fitness",
-  "personal trainer",
-  "hair salon",
-  "parrucchier",
-  "nutrition",
-  "school",
-  "scuola",
-  "course",
-  "formazione",
+  "restaurant", "ristorant", "trattoria", "gym", "fitness", "personal trainer",
+  "hair salon", "parrucchier", "nutrition", "school", "scuola", "course", "formazione",
 ];
 
 const BOOKING_CATEGORY_TERMS = [
-  "dentist",
-  "dental",
-  "fisioterap",
-  "physiotherap",
-  "spa",
-  "beauty",
-  "estet",
-  "lodging",
-  "hotel",
-  "agriturism",
-  "bed and breakfast",
-  "restaurant",
-  "ristorant",
-  "wedding",
-  "event venue",
-  "veterinar",
-  "gym",
-  "fitness",
-  "hair salon",
-  "parrucchier",
-  "nutrition",
+  "dentist", "dental", "fisioterap", "physiotherap", "spa", "beauty", "estet",
+  "lodging", "hotel", "agriturism", "bed and breakfast", "restaurant", "ristorant",
+  "wedding", "event venue", "veterinar", "gym", "fitness", "hair salon", "parrucchier", "nutrition",
 ];
 
 function normalize(value: string | null | undefined) {
@@ -111,105 +67,148 @@ function includesAny(value: string, terms: string[]) {
   return terms.some((term) => value.includes(term));
 }
 
-function gradeFor(score: number): ScoreGrade {
+export function gradeForScore(score: number): ScoreGrade {
   if (score >= 80) return "priority";
-  if (score >= 60) return "hot";
-  if (score >= 40) return "warm";
+  if (score >= 65) return "hot";
+  if (score >= 45) return "warm";
   return "cold";
 }
 
 export function scoreLead(input: DeterministicScoreInput): DeterministicScoreResult {
+  const category = normalize(input.category);
+  const region = normalize(input.region);
+  const hasWebsite = Boolean(input.websiteUrl?.trim());
+  const bookingRelevant = includesAny(category, BOOKING_CATEGORY_TERMS);
+  const positiveSignals: string[] = [];
+  const negativeSignals: string[] = [];
+
   if (input.businessStatus === "CLOSED_PERMANENTLY") {
     return {
       score: 0,
       grade: "cold",
-      recommendedService: input.websiteUrl ? "restyling-sito" : "sito-nuovo",
-      reasoning: "L'attività risulta chiusa definitivamente e non deve essere prioritizzata.",
+      recommendedService: hasWebsite ? "restyling-sito" : "sito-nuovo",
+      reasoning: "L'attivita risulta chiusa definitivamente e viene esclusa dalla priorita commerciale.",
       positiveSignals: [],
       negativeSignals: ["business_closed_permanently"],
+      components: [
+        { key: "marketFit", label: "Coerenza mercato", score: 0, maxScore: 30 },
+        { key: "businessStrength", label: "Solidita attivita", score: 0, maxScore: 25 },
+        { key: "digitalOpportunity", label: "Opportunita digitale", score: 0, maxScore: 30 },
+        { key: "contactability", label: "Contattabilita", score: 0, maxScore: 15 },
+      ],
       confidence: 0.95,
       version: DETERMINISTIC_SCORE_VERSION,
     };
   }
 
-  const category = normalize(input.category);
-  const region = normalize(input.region);
-  const hasWebsite = Boolean(input.websiteUrl?.trim());
-  const bookingRelevant = includesAny(category, BOOKING_CATEGORY_TERMS);
-  const signals: WeightedSignal[] = [
-    { key: "base_business", points: 15, description: "attività potenzialmente lavorabile" },
-  ];
-
+  let marketFit = 0;
   if (includesAny(category, HIGH_VALUE_CATEGORY_TERMS)) {
-    signals.push({ key: "category_high_value", points: 16, description: "categoria ad alto valore" });
+    marketFit += 22;
+    positiveSignals.push("category_high_value");
   } else if (includesAny(category, MEDIUM_VALUE_CATEGORY_TERMS)) {
-    signals.push({ key: "category_medium_value", points: 10, description: "categoria coerente con i servizi" });
-  } else if (!category) {
-    signals.push({ key: "category_missing", points: -5, description: "categoria non disponibile" });
+    marketFit += 16;
+    positiveSignals.push("category_medium_value");
+  } else if (category) {
+    marketFit += 8;
+    negativeSignals.push("category_unvalidated");
+  } else {
+    marketFit += 5;
+    negativeSignals.push("category_missing");
   }
-
   if (region === "emilia romagna") {
-    signals.push({ key: "region_emilia_romagna", points: 12, description: "area prioritaria Emilia-Romagna" });
+    marketFit += 8;
+    positiveSignals.push("region_emilia_romagna");
   } else if (region === "toscana") {
-    signals.push({ key: "region_toscana", points: 8, description: "area prioritaria Toscana" });
+    marketFit += 6;
+    positiveSignals.push("region_toscana");
   } else if (region === "lombardia") {
-    signals.push({ key: "region_lombardia", points: 3, description: "area target Lombardia" });
+    marketFit += 3;
+    positiveSignals.push("region_lombardia");
+  } else {
+    negativeSignals.push("region_outside_priority");
   }
 
-  signals.push(
-    hasWebsite
-      ? { key: "website_present", points: 4, description: "presenza digitale già attiva" }
-      : { key: "website_missing", points: 18, description: "sito web assente" },
-  );
-
+  let businessStrength = input.businessStatus === "OPERATIONAL" ? 5 : 3;
+  if (input.businessStatus === "OPERATIONAL") positiveSignals.push("business_operational");
   const rating = input.rating ?? 0;
   const reviewCount = input.reviewCount ?? 0;
   if (rating >= 4.2 && reviewCount >= 30) {
-    signals.push({ key: "reputation_strong", points: 16, description: "reputazione locale solida" });
+    businessStrength += 20;
+    positiveSignals.push("reputation_strong");
   } else if (rating >= 4 && reviewCount >= 10) {
-    signals.push({ key: "reputation_good", points: 10, description: "buone recensioni e attività reale" });
-  } else if (reviewCount >= 5) {
-    signals.push({ key: "reputation_present", points: 4, description: "presenza locale verificabile" });
-  } else if (reviewCount === 0) {
-    signals.push({ key: "reputation_missing", points: -6, description: "nessuna recensione disponibile" });
-  }
-  if (rating > 0 && rating < 3.5) {
-    signals.push({ key: "rating_low", points: -10, description: "rating sotto 3,5" });
-  }
-
-  if (input.phone?.trim()) {
-    signals.push({ key: "phone_available", points: 6, description: "telefono disponibile" });
+    businessStrength += 15;
+    positiveSignals.push("reputation_good");
+  } else if (reviewCount >= 5 && rating >= 3.5) {
+    businessStrength += 8;
+    positiveSignals.push("reputation_present");
+  } else if (rating > 0 && rating < 3.5) {
+    businessStrength += 3;
+    negativeSignals.push("rating_low");
   } else {
-    signals.push({ key: "phone_missing", points: -5, description: "telefono non disponibile" });
-  }
-  if (input.email?.trim()) {
-    signals.push({ key: "email_available", points: 3, description: "email disponibile" });
-  }
-  if (bookingRelevant && input.hasBooking === false) {
-    signals.push({ key: "booking_opportunity", points: 7, description: "opportunità booking o conversione" });
+    businessStrength += 2;
+    negativeSignals.push("reputation_insufficient");
   }
   if (input.businessStatus === "CLOSED_TEMPORARILY") {
-    signals.push({ key: "business_closed_temporarily", points: -20, description: "attività temporaneamente chiusa" });
+    businessStrength = 0;
+    negativeSignals.push("business_closed_temporarily");
   }
 
-  const score = Math.max(0, Math.min(100, signals.reduce((total, signal) => total + signal.points, 0)));
-  const positives = signals.filter((signal) => signal.points > 0 && signal.key !== "base_business");
-  const negatives = signals.filter((signal) => signal.points < 0);
-  const topReasons = [...positives].sort((a, b) => b.points - a.points).slice(0, 3);
-  const reasoning = topReasons.length
-    ? `Priorità basata su ${topReasons.map((signal) => signal.description).join(", ")}.`
-    : "I dati disponibili non mostrano ancora segnali sufficienti per assegnare priorità.";
+  let digitalOpportunity = hasWebsite ? 8 : 20;
+  positiveSignals.push(hasWebsite ? "website_present_unassessed" : "website_missing");
+  if (bookingRelevant) {
+    if (input.hasBooking === false) {
+      digitalOpportunity += 10;
+      positiveSignals.push("booking_opportunity");
+    } else if (input.hasBooking === true) {
+      digitalOpportunity += 2;
+      negativeSignals.push("booking_already_present");
+    } else {
+      digitalOpportunity += 4;
+      negativeSignals.push("booking_unknown");
+    }
+  } else {
+    digitalOpportunity += 6;
+  }
 
+  let contactability = 0;
+  if (input.phone?.trim()) {
+    contactability += 8;
+    positiveSignals.push("phone_available");
+  } else {
+    negativeSignals.push("phone_missing");
+  }
+  if (input.email?.trim()) {
+    contactability += 7;
+    positiveSignals.push("email_available");
+  } else {
+    negativeSignals.push("email_missing");
+  }
+
+  const components: ScoreComponent[] = [
+    { key: "marketFit", label: "Coerenza mercato", score: Math.min(30, marketFit), maxScore: 30 },
+    { key: "businessStrength", label: "Solidita attivita", score: Math.min(25, businessStrength), maxScore: 25 },
+    { key: "digitalOpportunity", label: "Opportunita digitale", score: Math.min(30, digitalOpportunity), maxScore: 30 },
+    { key: "contactability", label: "Contattabilita", score: Math.min(15, contactability), maxScore: 15 },
+  ];
+  let score = components.reduce((total, component) => total + component.score, 0);
+  if (input.businessStatus === "CLOSED_TEMPORARILY") score = Math.min(score, 35);
+
+  const strongest = [...components].sort(
+    (a, b) => (b.score / b.maxScore) - (a.score / a.maxScore),
+  ).slice(0, 2);
+  const reasoning = `Score basato soprattutto su ${strongest.map((component) => component.label.toLowerCase()).join(" e ")}.`;
   const knownFields = [
     Boolean(category),
     Boolean(region),
-    Boolean(input.phone?.trim()),
+    input.websiteUrl !== undefined,
+    Boolean(input.phone?.trim()) || Boolean(input.email?.trim()),
     input.rating != null,
     input.reviewCount != null,
     input.businessStatus != null,
+    typeof input.hasBooking === "boolean",
   ].filter(Boolean).length;
-  const confidence = Math.min(0.95, Number((0.45 + knownFields * 0.075).toFixed(3)));
-  const recommendedService = !hasWebsite
+  const confidence = Number(Math.min(0.95, 0.35 + knownFields * 0.075).toFixed(3));
+  const recommendedService: RecommendedService = !hasWebsite
     ? "sito-nuovo"
     : bookingRelevant && input.hasBooking === false
       ? "booking-conversione"
@@ -217,11 +216,12 @@ export function scoreLead(input: DeterministicScoreInput): DeterministicScoreRes
 
   return {
     score,
-    grade: gradeFor(score),
+    grade: gradeForScore(score),
     recommendedService,
     reasoning,
-    positiveSignals: positives.map((signal) => signal.key),
-    negativeSignals: negatives.map((signal) => signal.key),
+    positiveSignals,
+    negativeSignals,
+    components,
     confidence,
     version: DETERMINISTIC_SCORE_VERSION,
   };

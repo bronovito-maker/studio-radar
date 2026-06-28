@@ -1490,6 +1490,32 @@ h2 {
   line-height: 1.55;
 }
 
+.score-components {
+  display: grid;
+  gap: 9px;
+}
+
+.score-component {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 72px 36px;
+  align-items: center;
+  gap: 8px;
+  font-size: 10px;
+}
+
+.score-component > span {
+  color: var(--muted);
+}
+
+.score-component .progress-track {
+  height: 5px;
+}
+
+.score-component > strong {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
 .signal-list {
   display: flex;
   flex-wrap: wrap;
@@ -1527,6 +1553,61 @@ h2 {
 .score-meta dd {
   margin: 0;
   font-size: 12px;
+}
+
+.ai-assessment {
+  display: grid;
+  gap: 18px;
+}
+
+.ai-opportunities {
+  display: grid;
+  gap: 10px;
+}
+
+.ai-opportunities > div {
+  border-left: 3px solid var(--accent);
+  padding: 2px 0 2px 14px;
+}
+
+.ai-opportunities strong,
+.ai-opportunities p {
+  display: block;
+  margin: 0 0 6px;
+}
+
+.ai-opportunities p,
+.ai-details dd {
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.ai-opportunities a {
+  align-items: center;
+  display: inline-flex;
+  font-size: 0.82rem;
+  gap: 5px;
+}
+
+.ai-details {
+  display: grid;
+  gap: 14px;
+  margin: 0;
+}
+
+.ai-details div {
+  display: grid;
+  gap: 4px;
+}
+
+.ai-details dt {
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.ai-details dd {
+  margin: 0;
 }
 
 .score-meta dt {

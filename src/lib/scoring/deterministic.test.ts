@@ -17,7 +17,7 @@ const strongHotel = {
 describe("scoreLead", () => {
   it("assegna priorità a un business forte con opportunità concreta", () => {
     const result = scoreLead(strongHotel);
-    expect(result.score).toBeGreaterThanOrEqual(80);
+    expect(result.score).toBe(93);
     expect(result.grade).toBe("priority");
     expect(result.recommendedService).toBe("sito-nuovo");
     expect(result.positiveSignals).toContain("website_missing");
@@ -29,7 +29,7 @@ describe("scoreLead", () => {
     expect(result.score).toBeLessThan(40);
     expect(result.grade).toBe("cold");
     expect(result.negativeSignals).toEqual(
-      expect.arrayContaining(["category_missing", "reputation_missing", "phone_missing"]),
+      expect.arrayContaining(["category_missing", "reputation_insufficient", "phone_missing"]),
     );
   });
 
@@ -60,5 +60,26 @@ describe("scoreLead", () => {
     expect(scoreLead(strongHotel)).toEqual(scoreLead(strongHotel));
     expect(scoreLead(strongHotel).score).toBeLessThanOrEqual(100);
     expect(scoreLead({ businessName: "X", businessStatus: "CLOSED_PERMANENTLY" }).score).toBe(0);
+  });
+
+  it("espone quattro componenti che sommano allo score", () => {
+    const result = scoreLead(strongHotel);
+    expect(result.components).toHaveLength(4);
+    expect(result.components.reduce((total, component) => total + component.score, 0)).toBe(result.score);
+    expect(result.components.map((component) => component.maxScore)).toEqual([30, 25, 30, 15]);
+  });
+
+  it("non considera automaticamente eccellente un sito non ancora analizzato", () => {
+    const result = scoreLead({ ...strongHotel, websiteUrl: "https://example.com", hasBooking: undefined });
+    expect(result.score).toBe(75);
+    expect(result.grade).toBe("hot");
+    expect(result.positiveSignals).toContain("website_present_unassessed");
+    expect(result.negativeSignals).toContain("booking_unknown");
+  });
+
+  it("limita le attività temporaneamente chiuse", () => {
+    const result = scoreLead({ ...strongHotel, businessStatus: "CLOSED_TEMPORARILY" });
+    expect(result.score).toBeLessThanOrEqual(35);
+    expect(result.negativeSignals).toContain("business_closed_temporarily");
   });
 });
