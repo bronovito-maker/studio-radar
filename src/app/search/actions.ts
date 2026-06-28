@@ -242,7 +242,11 @@ export async function searchPlacesAction(
       };
     });
 
-    results.sort((a, b) => b.score.opportunityScore - a.score.opportunityScore || b.score.confidence - a.score.confidence);
+    results.sort((a, b) =>
+      b.score.opportunityScore - a.score.opportunityScore
+      || b.score.components.businessViability - a.score.components.businessViability
+      || b.score.confidence - a.score.confidence,
+    );
 
     await supabase
       .from("scan_runs")

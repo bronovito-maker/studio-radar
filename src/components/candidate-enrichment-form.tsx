@@ -40,14 +40,15 @@ const FIELD_LABELS: Record<CandidateFieldKey, string> = {
   hasBooking: "Booking online",
 };
 
-function VerificationBadge({ source, ready }: { source?: string | null; ready: boolean }) {
+function VerificationBadge({ source, ready, hasGoogleFallback }: { source?: string | null; ready: boolean; hasGoogleFallback?: boolean }) {
   if (!ready) return <span className="verification-badge pending"><CircleHelp size={12} /> Da controllare</span>;
+  if (!source && hasGoogleFallback) return <span className="verification-badge pending"><CircleHelp size={12} /> Da controllare</span>;
   if (!source) return <span className="verification-badge missing"><CircleAlert size={12} /> Non trovato</span>;
   return <span className="verification-badge verified" title={`Fonte ufficiale: ${source}`}><CircleCheck size={12} /> Verificato</span>;
 }
 
-function FieldHeading({ field, state }: { field: CandidateFieldKey; state: CandidateEnrichmentState }) {
-  return <span className="candidate-field-heading"><span>{FIELD_LABELS[field]}</span><VerificationBadge ready={state.status === "ready"} source={state.data?.fieldSources[field]} /></span>;
+function FieldHeading({ field, state, hasGoogleFallback }: { field: CandidateFieldKey; state: CandidateEnrichmentState; hasGoogleFallback?: boolean }) {
+  return <span className="candidate-field-heading"><span>{FIELD_LABELS[field]}</span><VerificationBadge ready={state.status === "ready"} source={state.data?.fieldSources[field]} hasGoogleFallback={hasGoogleFallback} /></span>;
 }
 
 function GoogleReference({ value }: { value?: string }) {
@@ -58,7 +59,16 @@ export function CandidateEnrichmentForm({ candidateId, canManage, initial, googl
   const [state, enrichAction] = useActionState(enrichCandidateAction, INITIAL_STATE);
   const enrichmentFormRef = useRef<HTMLFormElement>(null);
   const requestedRef = useRef(false);
-  const values = state.data ?? { ...initial, confidence: 0, missingEvidence: [], sources: [], fieldSources: {} as Record<CandidateFieldKey, null> };
+  const values = state.data ? {
+    ...state.data,
+    businessName: state.data.businessName || initial.businessName,
+    category: state.data.category || initial.category,
+    city: state.data.city || initial.city,
+    region: state.data.region || initial.region,
+    phone: state.data.phone || initial.phone,
+    address: state.data.address || initial.address,
+    websiteUrl: state.data.websiteUrl || initial.websiteUrl,
+  } : { ...initial, confidence: 0, missingEvidence: [], sources: [], fieldSources: {} as Record<CandidateFieldKey, null> };
 
   useEffect(() => {
     if (!canManage || !initial.websiteUrl || requestedRef.current) return;
@@ -74,7 +84,7 @@ export function CandidateEnrichmentForm({ candidateId, canManage, initial, googl
           <div><strong>{state.status === "idle" ? "Verifica automatica in corso" : "Compilazione assistita"}</strong><span>OpenAI consulta soltanto il sito ufficiale e restituisce fonti verificabili.</span></div>
           <SubmitButton className="secondary-button" pendingLabel="Analisi del sito..."><Sparkles size={16} /> {state.status === "ready" ? "Verifica di nuovo" : "Avvia verifica"}</SubmitButton>
         </form>
-      ) : null}
+      ) : canManage ? <div className="candidate-google-prefill"><SearchCheck size={18} /><div><strong>Dati Google precompilati</strong><span>Non è disponibile un sito ufficiale da consultare. Controlla i campi evidenziati prima di creare il lead.</span></div></div> : null}
 
       {state.status === "error" ? <div className="alert alert-error" role="alert">{state.message}</div> : null}
       {state.status === "ready" ? (
@@ -87,14 +97,14 @@ export function CandidateEnrichmentForm({ candidateId, canManage, initial, googl
       <form className="candidate-confirm-form" action={confirmCandidateAction} key={`${state.status}-${values.businessName}`}>
         <input type="hidden" name="candidateId" value={candidateId} />
         <div className="form-grid two-columns">
-          <label className="field"><FieldHeading field="businessName" state={state} /><input name="businessName" defaultValue={values.businessName} required minLength={2} maxLength={200} /><GoogleReference value={googleReference.businessName} /></label>
-          <label className="field"><FieldHeading field="category" state={state} /><input name="category" defaultValue={values.category} maxLength={200} /></label>
-          <label className="field"><FieldHeading field="city" state={state} /><input name="city" defaultValue={values.city} maxLength={120} /></label>
-          <label className="field"><FieldHeading field="region" state={state} /><input name="region" defaultValue={values.region} maxLength={120} /></label>
-          <label className="field"><FieldHeading field="phone" state={state} /><input name="phone" type="tel" defaultValue={values.phone} maxLength={60} /><GoogleReference value={googleReference.phone} /></label>
+          <label className="field"><FieldHeading field="businessName" state={state} hasGoogleFallback={Boolean(googleReference.businessName)} /><input name="businessName" defaultValue={values.businessName} required minLength={2} maxLength={200} /><GoogleReference value={googleReference.businessName} /></label>
+          <label className="field"><FieldHeading field="category" state={state} hasGoogleFallback={Boolean(initial.category)} /><input name="category" defaultValue={values.category} maxLength={200} /></label>
+          <label className="field"><FieldHeading field="city" state={state} hasGoogleFallback={Boolean(initial.city)} /><input name="city" defaultValue={values.city} maxLength={120} /></label>
+          <label className="field"><FieldHeading field="region" state={state} hasGoogleFallback={Boolean(initial.region)} /><input name="region" defaultValue={values.region} maxLength={120} /></label>
+          <label className="field"><FieldHeading field="phone" state={state} hasGoogleFallback={Boolean(googleReference.phone)} /><input name="phone" type="tel" defaultValue={values.phone} maxLength={60} /><GoogleReference value={googleReference.phone} /></label>
           <label className="field"><FieldHeading field="email" state={state} /><input name="email" type="email" defaultValue={values.email} maxLength={254} /></label>
-          <label className="field field-span"><FieldHeading field="address" state={state} /><input name="address" defaultValue={values.address} maxLength={300} /><GoogleReference value={googleReference.address} /></label>
-          <label className="field field-span"><FieldHeading field="websiteUrl" state={state} /><input name="websiteUrl" type="url" defaultValue={values.websiteUrl} maxLength={2048} /><GoogleReference value={googleReference.websiteUrl} /></label>
+          <label className="field field-span"><FieldHeading field="address" state={state} hasGoogleFallback={Boolean(googleReference.address)} /><input name="address" defaultValue={values.address} maxLength={300} /><GoogleReference value={googleReference.address} /></label>
+          <label className="field field-span"><FieldHeading field="websiteUrl" state={state} hasGoogleFallback={Boolean(googleReference.websiteUrl)} /><input name="websiteUrl" type="url" defaultValue={values.websiteUrl} maxLength={2048} /><GoogleReference value={googleReference.websiteUrl} /></label>
           <label className="field"><span>Valore stimato</span><input name="estimatedValue" type="number" min="0" max="10000000" step="100" defaultValue="0" /></label>
           <label className="check-field"><input name="hasBooking" type="checkbox" defaultChecked={values.hasBooking} /><FieldHeading field="hasBooking" state={state} /></label>
         </div>

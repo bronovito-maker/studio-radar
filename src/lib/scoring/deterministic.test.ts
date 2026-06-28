@@ -66,6 +66,8 @@ describe("scoreLead V2", () => {
     });
     expect(result.offerScores.websiteRedesign).toBeNull();
     expect(result.offerScores.automation).toBeNull();
+    expect(result.opportunityScore).toBe(0);
+    expect(result.nextAction).toBe("enrich_data");
   });
 
   it("valuta gap tecnici solo quando forniti come dati strutturati", () => {

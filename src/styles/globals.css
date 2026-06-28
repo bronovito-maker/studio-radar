@@ -1988,6 +1988,26 @@ h2 {
   padding: 12px;
 }
 
+.candidate-google-prefill {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel-soft);
+  padding: 12px;
+}
+
+.candidate-google-prefill > div {
+  display: grid;
+  gap: 3px;
+}
+
+.candidate-google-prefill span {
+  color: var(--muted);
+  font-size: 12px;
+}
+
 .candidate-field-heading {
   display: flex;
   align-items: center;

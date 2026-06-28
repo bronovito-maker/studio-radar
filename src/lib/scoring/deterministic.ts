@@ -228,8 +228,10 @@ function recommendation(offerScores: OfferScores) {
   return eligible[0] ?? null;
 }
 
-function decideNextAction(score: number, confidence: number, contactability: number, service: RecommendedService | null, websiteState: WebsiteVerification): NextAction {
-  if (score < 40 || !service) return "ignore";
+function decideNextAction(score: number, confidence: number, contactability: number, service: RecommendedService | null, websiteState: WebsiteVerification, hasUnassessedOffers: boolean, businessViability: number): NextAction {
+  if (score < 40 || !service) {
+    return hasUnassessedOffers && businessViability >= 35 ? "enrich_data" : "ignore";
+  }
   if (confidence < 60) return "enrich_data";
   if (confidence < 75) return "manual_verify";
   if (contactability < 35) return "manual_verify";
@@ -277,12 +279,13 @@ export function scoreLead(input: DeterministicScoreInput): DeterministicScoreRes
     branding: null,
   };
   const best = recommendation(offerScores);
+  const hasUnassessedOffers = [offerScores.siteNew, offerScores.websiteRedesign, offerScores.booking, offerScores.automation].some((score) => score === null);
   let opportunityScore = best?.[1] ?? 0;
   if (input.businessStatus === "CLOSED_TEMPORARILY") opportunityScore = Math.min(opportunityScore, 35);
   if (input.businessStatus === "CLOSED_PERMANENTLY") opportunityScore = 0;
   const recommendedService = opportunityScore > 0 ? best?.[0] ?? null : null;
   const confidence = components.digitalEvidenceCompleteness;
-  const nextAction = decideNextAction(opportunityScore, confidence, components.contactability, recommendedService, websiteState);
+  const nextAction = decideNextAction(opportunityScore, confidence, components.contactability, recommendedService, websiteState, hasUnassessedOffers, components.businessViability);
   const { evidence, unknowns } = collectSignals(input, category, websiteState, components);
   const reasoning = recommendedService
     ? `Opportunita ${opportunityScore}/100 per ${recommendedService}; prossima azione: ${nextAction}.`

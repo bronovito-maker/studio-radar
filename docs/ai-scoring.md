@@ -169,7 +169,7 @@ Restano sempre `null` nella V2. Non esistono ancora segnali sufficientemente aff
 opportunityScore = max(score offerta non-null)
 ```
 
-Se nessuna offerta e eleggibile, il risultato e `0` e il servizio consigliato e `null`.
+Se nessuna offerta e eleggibile, il valore persistito e `0` e il servizio consigliato e `null`. Quando almeno un'offerta pertinente e ancora `null` e la business viability e sufficiente, la UI deve mostrare **Da analizzare**, non interpretare lo zero tecnico come assenza definitiva di opportunita.
 
 Grade:
 
@@ -180,7 +180,8 @@ Grade:
 
 Next action:
 
-- score sotto 40: `ignore`;
+- score sotto 40 con offerte ancora non valutabili e viability sufficiente: `enrich_data`;
+- score sotto 40 senza potenziale da approfondire: `ignore`;
 - confidence sotto 60: `enrich_data`;
 - confidence tra 60 e 74: `manual_verify`;
 - contactability sotto 35: `manual_verify`;

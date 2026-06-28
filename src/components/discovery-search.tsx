@@ -86,9 +86,9 @@ export function DiscoverySearch({ configured }: { configured: boolean }) {
                 </div>
                 <div className="discovery-reputation"><strong>{result.rating ? result.rating.toFixed(1) : "—"}</strong><span>{result.reviewCount?.toLocaleString("it-IT") ?? 0} recensioni</span></div>
                 <div className="discovery-score">
-                  <span className={`score-pill score-pill-${result.score.grade}`}>{result.score.opportunityScore}</span>
-                  <strong>{gradeLabel(result.score.grade)}</strong>
-                  <span>{result.score.recommendedService ? SERVICE_LABELS[result.score.recommendedService] : "Nessuna offerta"}</span>
+                  <span className={`score-pill score-pill-${result.score.grade}`}>{result.score.opportunityScore === 0 && result.score.nextAction === "enrich_data" ? "—" : result.score.opportunityScore}</span>
+                  <strong>{result.score.opportunityScore === 0 && result.score.nextAction === "enrich_data" ? "Da analizzare" : gradeLabel(result.score.grade)}</strong>
+                  <span>{result.score.recommendedService ? SERVICE_LABELS[result.score.recommendedService] : result.score.nextAction === "enrich_data" ? "Valuta sito e automazioni" : "Nessuna offerta"}</span>
                   <small>{NEXT_ACTION_LABELS[result.score.nextAction]} · confidenza {result.score.confidence}%</small>
                 </div>
                 {!result.duplicateLeadId && state.query ? <ShortlistButton placeId={result.placeId} category={state.query.category} location={state.query.location} region={state.query.region} shortlisted={result.shortlisted} /> : null}

@@ -46,13 +46,13 @@ export default async function CandidatePage({ params, searchParams }: CandidateP
             candidateId={candidate.id}
             canManage={canManage}
             initial={{
-              businessName: "",
+              businessName: place?.displayName.text ?? "",
               category: candidate.search_category,
               city: candidate.search_location,
               region: candidate.search_region,
-              phone: "",
+              phone: place?.nationalPhoneNumber ?? "",
               email: "",
-              address: "",
+              address: place?.formattedAddress ?? "",
               websiteUrl: place?.websiteUri ?? "",
               hasBooking: false,
             }}
