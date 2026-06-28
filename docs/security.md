@@ -40,13 +40,15 @@ Usare `.env.local` in sviluppo e secret manager in produzione.
 
 ## Rate limit
 
-Da prevedere per:
+Implementato con eventi persistenti per utente e scope per:
 
-- login;
 - ricerca Places;
 - scoring AI;
 - import CSV;
-- cron manuale.
+- arricchimento candidati;
+- bozze outreach.
+
+Il login resta protetto dai controlli Supabase Auth; CAPTCHA e Leaked Password Protection vanno attivati prima del deploy pubblico.
 
 ## WhatsApp e outreach
 
@@ -63,7 +65,7 @@ Non includere invio automatico massivo WhatsApp senza:
 
 - Salvare solo dati necessari al processo commerciale.
 - Evitare note sensibili non rilevanti.
-- Prevedere cancellazione/anonymization lead.
+- Anonimizzazione lead disponibile solo agli admin; rimuove PII, note, score e messaggi lasciando un marker minimale.
 - Tracciare origine dati (`source`) e timestamp.
 
 ## Checklist pre-deploy
@@ -75,4 +77,4 @@ Non includere invio automatico massivo WhatsApp senza:
 - Cron secret lungo e random.
 - Build senza warning critici.
 - Test auth negativi: utente anonimo riceve 401/403.
-
+- Test browser anonimi eseguiti; test admin/collaborator configurabili tramite account E2E dedicati.

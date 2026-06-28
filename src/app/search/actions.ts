@@ -13,6 +13,7 @@ import {
 } from "@/lib/leads/normalization";
 import { DISCOVERY_CATEGORIES } from "@/lib/places/categories";
 import { getGooglePlaceSummary, isPlacesConfigured, PlacesError, searchGooglePlaces, type GooglePlace } from "@/lib/places/client";
+import { consumeRateLimit } from "@/lib/rate-limit";
 import { scoreLead, type DeterministicScoreResult } from "@/lib/scoring/deterministic";
 import { createClient } from "@/lib/supabase/server";
 
@@ -121,12 +122,15 @@ export async function searchPlacesAction(
     return { status: "error", message: "Google Places non è ancora configurato. Aggiungi la chiave server-side per avviare la ricerca.", results: [] };
   }
 
-  const supabase = await createClient();
   const query = {
     category: parsed.data.category,
     location: parsed.data.location,
     region: parsed.data.region,
   };
+  const supabase = await createClient();
+  if (!await consumeRateLimit(supabase, "places_search")) {
+    return { status: "error", message: "Hai raggiunto il limite di ricerche. Attendi un minuto e riprova.", results: [], query };
+  }
   const { data: scanRun, error: scanError } = await supabase
     .from("scan_runs")
     .insert({
@@ -313,6 +317,9 @@ export async function enrichCandidateAction(
   if (error || !candidate) return { status: "error", message: "Candidato non disponibile." };
   if (candidate.created_by !== viewer.id && viewer.role !== "admin") {
     return { status: "error", message: "Solo chi ha salvato il candidato o un admin può convertirlo." };
+  }
+  if (!await consumeRateLimit(supabase, "candidate_enrichment")) {
+    return { status: "error", message: "Limite analisi raggiunto. Riprova più tardi." };
   }
 
   try {

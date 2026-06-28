@@ -5,10 +5,11 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { websiteAssessmentSchema } from "@/lib/ai/contracts";
 import { AiAnalysisError, analyzeWebsiteDomainWithOpenAi, generateOutreachDraftWithOpenAi } from "@/lib/ai/openai";
-import { requireViewer } from "@/lib/auth";
+import { requireAdmin, requireViewer } from "@/lib/auth";
 import { isLeadStatus } from "@/lib/crm";
 import { scoreLead } from "@/lib/scoring/deterministic";
 import { combineScores } from "@/lib/scoring/hybrid";
+import { consumeRateLimit } from "@/lib/rate-limit";
 import { createClient } from "@/lib/supabase/server";
 import type { Json } from "@/types/database";
 
@@ -192,6 +193,9 @@ export async function analyzeLeadWithOpenAi(formData: FormData) {
   if (leadError || !lead || !lead.website_url) {
     redirect(withMessage(`/leads/${idResult.data}`, "error", "Serve un sito ufficiale valido per l'analisi OpenAI"));
   }
+  if (!await consumeRateLimit(supabase, "lead_ai_analysis")) {
+    redirect(withMessage(`/leads/${lead.id}`, "error", "Limite analisi OpenAI raggiunto. Riprova più tardi."));
+  }
 
   const input = {
     businessName: lead.business_name,
@@ -275,6 +279,9 @@ export async function generateOutreachDraftAction(
     supabase.from("settings").select("booking_url").eq("id", 1).single(),
   ]);
   if (!lead) return { status: "error", message: "Lead non disponibile." };
+  if (!await consumeRateLimit(supabase, "outreach_draft")) {
+    return { status: "error", message: "Limite bozze raggiunto. Riprova più tardi." };
+  }
 
   const serviceId = latestScore?.recommended_service_id ?? lead.recommended_service_id;
   const { data: service } = serviceId
@@ -343,4 +350,22 @@ export async function recordManualOutreachAction(formData: FormData) {
   revalidatePath("/outreach");
   revalidatePath(`/leads/${parsed.data.leadId}`);
   redirect(withMessage(`/leads/${parsed.data.leadId}`, "success", "Contatto WhatsApp registrato"));
+}
+
+export async function anonymizeLeadAction(formData: FormData) {
+  await requireAdmin();
+  const leadId = z.uuid().safeParse(value(formData, "leadId"));
+  const confirmation = value(formData, "confirmation");
+  if (!leadId.success || confirmation !== "ANONIMIZZA") {
+    redirect(withMessage("/leads", "error", "Conferma anonimizzazione non valida"));
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("anonymize_lead", { p_lead_id: leadId.data });
+  if (error) redirect(withMessage(`/leads/${leadId.data}`, "error", "Anonimizzazione non riuscita"));
+
+  revalidatePath("/");
+  revalidatePath("/leads");
+  revalidatePath(`/leads/${leadId.data}`);
+  redirect(withMessage(`/leads/${leadId.data}`, "success", "Lead anonimizzato"));
 }

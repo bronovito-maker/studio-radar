@@ -321,6 +321,22 @@ export type Database = {
         Update: Partial<Database["public"]["Tables"]["scan_runs"]["Insert"]>;
         Relationships: [];
       };
+      rate_limit_events: {
+        Row: {
+          id: number;
+          actor_id: string;
+          scope: string;
+          occurred_at: string;
+        };
+        Insert: {
+          id?: number;
+          actor_id: string;
+          scope: string;
+          occurred_at?: string;
+        };
+        Update: never;
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: {
@@ -411,6 +427,14 @@ export type Database = {
           p_channel: string;
           p_message: string;
         };
+        Returns: undefined;
+      };
+      consume_rate_limit: {
+        Args: { p_scope: string };
+        Returns: boolean;
+      };
+      anonymize_lead: {
+        Args: { p_lead_id: string };
         Returns: undefined;
       };
     };

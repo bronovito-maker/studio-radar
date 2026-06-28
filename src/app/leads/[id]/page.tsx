@@ -2,6 +2,7 @@ import { ArrowLeft, Calendar, ExternalLink, Gauge, Globe, Mail, MapPin, MessageC
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
+import { AnonymizeLeadForm } from "@/components/anonymize-lead-form";
 import { SubmitButton } from "@/components/submit-button";
 import { OutreachComposer } from "@/components/outreach-composer";
 import { websiteAssessmentSchema, type WebsiteAssessment } from "@/lib/ai/contracts";
@@ -25,6 +26,7 @@ const EVENT_LABELS: Record<string, string> = {
   hybrid_score_created: "Score ibrido OpenAI calcolato",
   candidate_converted: "Candidato verificato e aggiunto al CRM",
   manual_outreach_recorded: "Contatto manuale registrato",
+  lead_anonymized: "Dati del lead anonimizzati",
 };
 
 const SIGNAL_LABELS: Record<string, string> = {
@@ -180,6 +182,7 @@ export default async function LeadDetailPage({ params, searchParams }: LeadDetai
                 <div><dt>Booking</dt><dd>{lead.has_booking ? "Presente" : "Non verificato"}</dd></div>
               </dl>
             </section>
+            {viewer.role === "admin" ? <section className="panel danger-panel"><div className="panel-header"><div><p className="eyebrow">Privacy</p><h2>Anonimizzazione</h2></div></div><p className="muted-copy">Rimuove definitivamente contatti, note, analisi e storico dei messaggi. Resta soltanto un evento minimale.</p><AnonymizeLeadForm leadId={lead.id} /></section> : null}
           </div>
         </aside>
       </div>

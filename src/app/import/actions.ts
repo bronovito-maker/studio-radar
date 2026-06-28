@@ -12,6 +12,7 @@ import {
   type RawImportRow,
 } from "@/lib/lead-import";
 import { dedupeKeys, findExistingLeadKeys } from "@/lib/leads/deduplication";
+import { consumeRateLimit } from "@/lib/rate-limit";
 import { createClient } from "@/lib/supabase/server";
 import type { Json } from "@/types/database";
 
@@ -38,6 +39,7 @@ function formValue(formData: FormData, key: string) {
 
 export async function uploadCsv(formData: FormData) {
   const viewer = await requireViewer();
+  const supabase = await createClient();
   const file = formData.get("file");
 
   if (!(file instanceof File) || file.size === 0) {
@@ -83,7 +85,9 @@ export async function uploadCsv(formData: FormData) {
     rowNumber: index + 2,
     values: Object.fromEntries(headers.map((header, column) => [header, record[column] ?? ""])),
   }));
-  const supabase = await createClient();
+  if (!await consumeRateLimit(supabase, "csv_import")) {
+    redirect(withMessage("/import", "error", "Limite import raggiunto. Riprova tra qualche minuto."));
+  }
   const { data, error } = await supabase
     .from("lead_imports")
     .insert({

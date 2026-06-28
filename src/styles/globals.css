@@ -289,7 +289,8 @@ h2 {
 
 .icon-button,
 .primary-button,
-.secondary-button {
+.secondary-button,
+.danger-button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -331,7 +332,8 @@ h2 {
 }
 
 .primary-button:disabled,
-.secondary-button:disabled {
+.secondary-button:disabled,
+.danger-button:disabled {
   cursor: wait;
   opacity: 0.62;
 }
@@ -348,6 +350,13 @@ h2 {
 .secondary-button {
   background: var(--panel);
   color: var(--foreground);
+  padding: 0 12px;
+}
+
+.danger-button {
+  background: var(--danger-soft);
+  border-color: var(--danger);
+  color: var(--danger);
   padding: 0 12px;
 }
 
@@ -2098,6 +2107,17 @@ h2 {
 .outreach-phone {
   color: var(--muted);
   font-size: 12px;
+}
+
+.danger-panel {
+  display: grid;
+  gap: 12px;
+  border-color: color-mix(in srgb, var(--danger) 45%, var(--line));
+}
+
+.anonymize-form {
+  display: grid;
+  gap: 10px;
 }
 
 .candidate-sources a {

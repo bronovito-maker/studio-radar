@@ -153,3 +153,9 @@ Verifica:
 - richiesta senza secret respinta;
 - doppia run concorrente evitata;
 - log run completo.
+
+## Comandi di verifica
+
+- `npm test`: contratti e scoring.
+- `npm run test:e2e`: protezione route e percorsi browser; le prove autenticate richiedono gli account E2E documentati.
+- `npm run build`, `npm run lint`, `npm run typecheck`: gate di consegna.

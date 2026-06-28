@@ -54,3 +54,12 @@ OpenAI e il provider scelto. Il CRM continua a funzionare senza chiave, ma le an
 | `GOOGLE_SHEETS_CLIENT_EMAIL` | quando sync Sheets sara implementato |
 | `GOOGLE_SHEETS_PRIVATE_KEY` | quando sync Sheets sara implementato |
 | `GOOGLE_SHEETS_SPREADSHEET_ID` | quando sync Sheets sara implementato |
+
+## Test E2E
+
+Queste variabili sono solo locali o CI e non vanno impostate con account personali di produzione:
+
+- `E2E_ADMIN_EMAIL`
+- `E2E_ADMIN_PASSWORD`
+- `E2E_COLLABORATOR_EMAIL`
+- `E2E_COLLABORATOR_PASSWORD`

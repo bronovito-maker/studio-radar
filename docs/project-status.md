@@ -19,7 +19,7 @@ Il CRM e eseguibile e utilizzabile per inserimento manuale o CSV, discovery live
 | 4 - Discovery e scoring | Completata | Ricerca, shortlist, arricchimento verificabile, conversione lead e scoring completati |
 | 5 - Outreach manuale | Completata | Bozza OpenAI modificabile, fallback, `wa.me`, booking globale e audit |
 | 6 - Cron controllato | Non iniziata | Endpoint protetto, lock e scan runs |
-| 7 - Hardening | Parziale | RLS e controlli base presenti; test E2E, rate limit e logging da completare |
+| 7 - Hardening | Parziale | Rate limit, anonimizzazione e test anonimi completati; restano E2E autenticati e logging esterno |
 
 ## Fondazioni verificate
 
@@ -60,6 +60,9 @@ Il CRM e eseguibile e utilizzabile per inserimento manuale o CSV, discovery live
 - Coda outreach e composer WhatsApp completati: bozza OpenAI modificabile, fallback deterministico e booking link globale.
 - Registrazione manuale del contatto verificata: stato, timestamp e audit atomici con rollback completo.
 - Pagina impostazioni amministrativa disponibile per booking URL e soglia di qualificazione.
+- Rate limit PostgreSQL persistente applicato a Places, import, arricchimento, analisi AI e bozze outreach; verifica limite superata con rollback.
+- Anonimizzazione lead admin-only verificata, incluso il diniego al ruolo collaboratore.
+- Suite Playwright aggiunta: redirect e protezione route anonime passano; test admin/collaborator pronti e condizionati a credenziali E2E dedicate.
 
 ## Auth ancora da chiudere
 
