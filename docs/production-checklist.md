@@ -8,7 +8,7 @@
 - Generare `CRON_SECRET` lungo e casuale.
 - Caricare `SUPABASE_SECRET_KEY` soltanto come secret server-side.
 - Configurare booking URL dalla pagina Impostazioni.
-- Creare un Render Cron Job giornaliero per `/api/cron/email-followups` con Bearer `CRON_SECRET`.
+- Verificare il job Supabase Cron `studio-radar-email-followups` e il secret cifrato in Vault.
 
 ## Supabase Auth
 

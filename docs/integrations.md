@@ -90,6 +90,7 @@ In produzione applicare anche una restrizione adatta al backend e monitorare quo
 - Invio transazionale singolo dalla scheda lead, sempre dopo approvazione dell'operatore.
 - Mittente verificato, reply-to e limite giornaliero configurabili dagli amministratori.
 - Tre follow-up opzionali con ritardi configurabili e cron giornaliero alle 07:00 UTC.
+- Scheduler attivo su Supabase Cron; `pg_net` richiama Render usando il Bearer token conservato in Vault.
 - Tracking tramite webhook autenticato per invio, consegna, apertura, click, bounce, blocco, spam, errore e disiscrizione.
 - Eventi idempotenti: una consegna webhook ripetuta non duplica audit o aggiornamenti.
 - Stop immediato dei follow-up su risposta registrata, bounce, blocco, spam o disiscrizione.

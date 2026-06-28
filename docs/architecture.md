@@ -9,7 +9,7 @@
 - Auth: Supabase Auth.
 - AI: OpenAI Responses API con Structured Outputs; modello configurabile, default `gpt-5.4-mini`.
 - Maps: Google Places API.
-- Cron: Render Cron Job o scheduler equivalente.
+- Cron: Supabase Cron (`pg_cron` + `pg_net`) con secret in Vault.
 - Test: Vitest per logica, Playwright per flussi principali.
 
 ## Moduli principali

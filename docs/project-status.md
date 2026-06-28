@@ -61,7 +61,8 @@ Il CRM e eseguibile e utilizzabile per inserimento manuale o CSV, discovery live
 - Registrazione manuale del contatto verificata: stato, timestamp e audit atomici con rollback completo.
 - Email Brevo implementata: invio approvato, limite giornaliero, mittente configurabile, tracking webhook idempotente e storico per lead.
 - Tre follow-up schedulabili con stop automatico su bounce, disiscrizione o risposta registrata; flusso SQL verificato con rollback e RLS autenticata.
-- Invio email Brevo abilitato con mittente verificato `crmdile007@gmail.com`; tracking webhook e follow-up automatici restano disabilitati fino al deploy su dominio pubblico.
+- Invio email Brevo attivo con mittente verificato `crmdile007@gmail.com`, webhook autenticato pubblico e follow-up automatici a 3/6/9 giorni.
+- Supabase Cron attivo alle 07:00 UTC: secret cifrato in Vault, chiamata `pg_net` a Render verificata con risposta `200`.
 - Pagina impostazioni amministrativa disponibile per booking URL e soglia di qualificazione.
 - Rate limit PostgreSQL persistente applicato a Places, import, arricchimento, analisi AI e bozze outreach; verifica limite superata con rollback.
 - Anonimizzazione lead admin-only verificata, incluso il diniego al ruolo collaboratore.
