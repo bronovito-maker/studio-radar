@@ -44,6 +44,17 @@ export function formatDate(value: string) {
   }).format(new Date(value));
 }
 
+export function formatDateTime(value: string) {
+  return new Intl.DateTimeFormat("it-IT", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).format(new Date(value));
+}
+
 export function isLeadStatus(value: string): value is LeadStatus {
   return LEAD_STATUSES.some((status) => status.value === value);
 }

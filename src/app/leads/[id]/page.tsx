@@ -8,7 +8,7 @@ import { SubmitButton } from "@/components/submit-button";
 import { OutreachComposer } from "@/components/outreach-composer";
 import { websiteAssessmentSchema, type WebsiteAssessment } from "@/lib/ai/contracts";
 import { requireViewer } from "@/lib/auth";
-import { formatCurrency, formatDate, LEAD_STATUSES, SOURCE_LABELS, STATUS_LABELS } from "@/lib/crm";
+import { formatCurrency, formatDate, formatDateTime, LEAD_STATUSES, SOURCE_LABELS, STATUS_LABELS } from "@/lib/crm";
 import { isScoreSnapshotCurrent } from "@/lib/scoring/snapshot";
 import { createClient } from "@/lib/supabase/server";
 import type { Json } from "@/types/database";
@@ -276,7 +276,7 @@ export default async function LeadDetailPage({ params, searchParams }: LeadDetai
               const payload = event.payload && typeof event.payload === "object" && !Array.isArray(event.payload) ? event.payload : null;
               const changedFields = event.event_type === "lead_details_updated" && payload ? detailChanges(payload) : [];
 
-              return <li key={event.id}><span className="timeline-dot" /><div><strong>{EVENT_LABELS[event.event_type] || event.event_type}</strong><span>{formatDate(event.created_at)}</span>{event.event_type === "status_changed" && payload ? <p>Da {STATUS_LABELS[payload.from as keyof typeof STATUS_LABELS] ?? String(payload.from)} a {STATUS_LABELS[payload.to as keyof typeof STATUS_LABELS] ?? String(payload.to)}</p> : null}{changedFields.length ? <p>Campi aggiornati: {changedFields.map((field) => DETAIL_FIELD_LABELS[field] || field).join(" · ")}</p> : null}</div></li>;
+              return <li key={event.id}><span className="timeline-dot" /><div><strong>{EVENT_LABELS[event.event_type] || event.event_type}</strong><span>{formatDateTime(event.created_at)}</span>{event.event_type === "status_changed" && payload ? <p>Da {STATUS_LABELS[payload.from as keyof typeof STATUS_LABELS] ?? String(payload.from)} a {STATUS_LABELS[payload.to as keyof typeof STATUS_LABELS] ?? String(payload.to)}</p> : null}{changedFields.length ? <p>Campi aggiornati: {changedFields.map((field) => DETAIL_FIELD_LABELS[field] || field).join(" · ")}</p> : null}</div></li>;
             })}</ol> : <p className="muted-copy">Nessun evento registrato.</p>}
           </article>
         </section>
