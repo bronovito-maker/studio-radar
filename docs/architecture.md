@@ -10,6 +10,7 @@
 - AI: OpenAI Responses API con Structured Outputs; modello configurabile, default `gpt-5.4-mini`.
 - Maps: Google Places API.
 - Cron: Supabase Cron (`pg_cron` + `pg_net`) con secret in Vault.
+- Web Scouting: `fetch()` nativo + regex, zero dipendenze esterne.
 - Test: Vitest per logica, Playwright per flussi principali.
 
 ## Moduli principali
@@ -22,6 +23,7 @@ app/
   search/
   import/
   settings/
+  outreach/
 
 lib/
   auth/
@@ -31,13 +33,27 @@ lib/
   places/
   outreach/
   audit/
-  validation/
+  web-scout/        ← crawling siti web, estrazione contatti reali
+  web-scout-utils/  ← protezione SSRF, concorrenza limitata
 ```
 
-## Flusso lead discovery
+## Flusso mass discovery (cron notturno)
 
 ```text
-Utente o cron
+Cron 03:00 UTC
+  -> Google Places batch search (fino a 50 risultati)
+  -> web scouting sicuro del sito ufficiale (estrazione nome, email, telefono, booking, social, chatbot)
+  -> auto-conversione lead con soli dati sito/ricerca (RPC con deduplica atomica)
+  -> scoring deterministico V2 (con dati arricchiti)
+  -> coda email (queued, MAI inviate automaticamente)
+  -> admin approva invio la mattina (/outreach)
+  -> invio Brevo con anti-ban (delay 1.5s, limite giornaliero)
+```
+
+## Flusso lead discovery (manuale)
+
+```text
+Utente
   -> richiesta categoria + zona
   -> Google Places
   -> normalizzazione risultati

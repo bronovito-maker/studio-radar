@@ -13,6 +13,10 @@ import { scoreLead } from "@/lib/scoring/deterministic";
 import { isScoreSnapshotCurrent } from "@/lib/scoring/snapshot";
 import { consumeRateLimit } from "@/lib/rate-limit";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { mapWithConcurrency, scoutWebsite } from "@/lib/web-scout";
+import { searchGooglePlacesBatch, PlacesError } from "@/lib/places/client";
+import { DISCOVERY_CATEGORIES } from "@/lib/places/categories";
 import type { Json } from "@/types/database";
 
 const optionalText = z.string().trim().max(300).transform((value) => value || null);
@@ -620,4 +624,346 @@ export async function anonymizeLeadAction(formData: FormData) {
   revalidatePath("/leads");
   revalidatePath(`/leads/${leadId.data}`);
   redirect(withMessage(`/leads/${leadId.data}`, "success", "Lead anonimizzato"));
+}
+
+// ── Batch send queued discovery emails (admin-only, manual trigger) ────────
+
+export async function sendQueuedEmailsAction() {
+  await requireAdmin();
+
+  const supabase = await createClient();
+  const [{ data: settings }, { data: owner }] = await Promise.all([
+    supabase.from("settings").select(
+      "email_enabled, email_sender_name, email_sender_email, email_reply_to, email_daily_limit, email_follow_up_enabled"
+    ).eq("id", 1).single(),
+    supabase.from("profiles").select("id").eq("role", "admin").order("created_at").limit(1).single(),
+  ]);
+
+  if (!settings?.email_enabled || !settings.email_sender_email || !owner) {
+    redirect("/outreach?error=Configurazione%20email%20incompleta");
+  }
+
+  type ClaimedMessage = {
+    id: string; lead_id: string; recipient_email: string; recipient_name: string;
+    subject: string; body: string; kind: string; attempt_count: number;
+  };
+  const { data: claimedBatch, error: claimError } = await supabase.rpc("claim_queued_initial_emails", {
+    p_requested_limit: 50,
+  });
+  if (claimError) redirect("/outreach?error=Impossibile%20prenotare%20la%20coda");
+  const queued = Array.isArray(claimedBatch) ? claimedBatch as ClaimedMessage[] : [];
+
+  if (!queued?.length) redirect("/outreach?error=Nessuna%20email%20in%20coda");
+
+  let sent = 0;
+  let failed = 0;
+  let skipped = 0;
+
+  for (const [messageIndex, message] of queued.entries()) {
+    // Verify lead is still contactable.
+    const { data: lead } = await supabase.from("leads")
+      .select("status, email_suppressed_at, email_replied_at")
+      .eq("id", message.lead_id)
+      .single();
+    if (!lead || lead.email_suppressed_at || lead.email_replied_at || ["booked", "client", "discarded"].includes(lead.status)) {
+      await supabase.from("email_messages").update({
+        status: "cancelled", cancelled_at: new Date().toISOString(), error_code: "LEAD_NOT_CONTACTABLE"
+      }).eq("id", message.id);
+      skipped += 1;
+      continue;
+    }
+
+    // Send via Brevo with delay between sends (anti-ban).
+    try {
+      const result = await sendBrevoEmail({
+        id: message.id,
+        toEmail: message.recipient_email,
+        toName: message.recipient_name,
+        senderEmail: settings.email_sender_email,
+        senderName: settings.email_sender_name,
+        replyTo: settings.email_reply_to,
+        subject: message.subject,
+        body: message.body,
+      });
+
+      const { error: recordError } = await supabase.rpc("record_email_sent", {
+        p_email_id: message.id,
+        p_provider_message_id: result.messageId,
+        p_follow_up_bodies: settings.email_follow_up_enabled ? followUpBodies(message.recipient_name) : [],
+      });
+      if (recordError) {
+        console.error("Email sent but audit RPC failed", { messageId: message.id, code: recordError.code });
+        await supabase.from("email_messages").update({
+          status: "sent",
+          provider_message_id: result.messageId,
+          sent_at: new Date().toISOString(),
+          attempt_count: Math.min(message.attempt_count + 1, 5),
+          error_code: "AUDIT_PERSISTENCE_FAILED",
+        }).eq("id", message.id).eq("status", "sending");
+      }
+      sent += 1;
+
+      // Anti-ban delay: 1.5 seconds between sends.
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+    } catch (error) {
+      const retryable = error instanceof BrevoError && error.retryable;
+      await supabase.from("email_messages").update(retryable ? {
+        status: "queued",
+        scheduled_for: new Date(Date.now() + 24 * 60 * 60_000).toISOString(),
+        attempt_count: Math.min(message.attempt_count + 1, 5),
+        error_code: error instanceof BrevoError ? error.code : "SEND_FAILED",
+      } : {
+        status: "failed",
+        failed_at: new Date().toISOString(),
+        attempt_count: Math.min(message.attempt_count + 1, 5),
+        error_code: error instanceof BrevoError ? error.code : "SEND_FAILED",
+      }).eq("id", message.id);
+      failed += 1;
+
+      // Stop on rate limit.
+      if (error instanceof BrevoError && error.code === "RATE_LIMITED") {
+        const unprocessedIds = queued.slice(messageIndex + 1).map((entry) => entry.id);
+        if (unprocessedIds.length) {
+          await supabase.from("email_messages")
+            .update({ status: "queued" })
+            .in("id", unprocessedIds)
+            .eq("status", "sending");
+        }
+        break;
+      }
+    }
+  }
+
+  revalidatePath("/");
+  revalidatePath("/outreach");
+  redirect(`/outreach?success=Inviate%20${sent}%20email%20${failed ? `·%20${failed}%20fallite%20` : ""}${skipped ? `·%20${skipped}%20saltate` : ""}`);
+}
+
+// ── Manual discovery trigger (admin-only, on-demand) ─────────────────────
+
+const manualDiscoverySchema = z.object({
+  category: z.enum(DISCOVERY_CATEGORIES),
+  location: z.string().trim().max(100).optional().default(""),
+  region: z.string().trim().max(100).optional().default(""),
+  pageSize: z.coerce.number().int().min(1).max(50),
+}).refine((data) => (data.location.length >= 2 || data.region.length >= 2), {
+  message: "Inserisci almeno una città o una regione",
+});
+
+export async function triggerManualDiscoveryAction(formData: FormData) {
+  await requireAdmin();
+
+  const parsed = manualDiscoverySchema.safeParse({
+    category: value(formData, "category"),
+    location: value(formData, "location"),
+    region: value(formData, "region"),
+    pageSize: value(formData, "pageSize") || "20",
+  });
+
+  if (!parsed.success) {
+    redirect(`/search?error=${encodeURIComponent(parsed.error.issues[0]?.message ?? "Dati non validi")}`);
+  }
+
+  let supabase: ReturnType<typeof createAdminClient>;
+  try {
+    supabase = createAdminClient();
+  } catch {
+    redirect("/search?error=Configurazione%20server%20incompleta");
+  }
+
+  const { data: owner } = await supabase
+    .from("profiles").select("id").eq("role", "admin").order("created_at").limit(1).single();
+  if (!owner) redirect("/search?error=Nessun%20admin%20trovato");
+
+  const { data: settings } = await supabase.from("settings").select(
+    "default_score_threshold, email_auto_outreach_enabled, email_enabled, email_sender_name, email_sender_email, email_reply_to, email_follow_up_enabled"
+  ).eq("id", 1).single();
+
+  // Create scan run.
+  const { data: scan, error: scanError } = await supabase.from("scan_runs").insert({
+    trigger: "manual",
+    category: parsed.data.category,
+    region: `${parsed.data.location}, ${parsed.data.region}`,
+    status: "running",
+    created_by: owner.id,
+  }).select("id").single();
+
+  if (scanError || !scan) redirect("/search?error=Scansione%20non%20avviata");
+
+  try {
+    const places = await searchGooglePlacesBatch({
+      category: parsed.data.category,
+      location: parsed.data.location,
+      region: parsed.data.region,
+      targetCount: parsed.data.pageSize,
+    });
+
+    const placeIds = places.map((p) => p.id);
+    const [{ data: leads }, { data: candidates }] = placeIds.length ? await Promise.all([
+      supabase.from("leads").select("google_place_id").in("google_place_id", placeIds),
+      supabase.from("lead_candidates").select("google_place_id").in("google_place_id", placeIds),
+    ]) : [{ data: [] }, { data: [] }];
+    const existingIds = new Set([
+      ...(leads ?? []).map((l) => l.google_place_id).filter(Boolean),
+      ...(candidates ?? []).map((c) => c.google_place_id),
+    ]);
+    const freshPlaces = places.filter((p) => !existingIds.has(p.id));
+
+    if (freshPlaces.length) {
+      const { error: shortlistError } = await supabase.from("lead_candidates").insert(freshPlaces.map((p) => ({
+        google_place_id: p.id,
+        search_category: parsed.data.category,
+        search_location: parsed.data.location,
+        search_region: parsed.data.region,
+        origin: "manual",
+        created_by: owner.id,
+      })));
+      if (shortlistError) throw shortlistError;
+    }
+
+    let converted = 0;
+    let scouted = 0;
+    let queued = 0;
+    const resolvedPlaceIds: string[] = [];
+    const reachOut = settings?.email_auto_outreach_enabled && settings?.email_enabled && Boolean(settings?.email_sender_email);
+
+    const enrichedPlaces = await mapWithConcurrency(freshPlaces, 5, async (place) => ({
+      place,
+      scoutResult: place.websiteUri ? await scoutWebsite(place.websiteUri) : null,
+    }));
+
+    for (const { place, scoutResult } of enrichedPlaces) {
+      const city = parsed.data.location;
+      const region = parsed.data.region;
+      const category = parsed.data.category;
+      const websiteUrl = place.websiteUri ?? null;
+      if (!websiteUrl) continue;
+      if (!scoutResult || scoutResult.status !== "ok" || !scoutResult.businessName) continue;
+      scouted += 1;
+      const businessName = scoutResult.businessName;
+      const phone = scoutResult.phones[0]?.number ?? null;
+
+      const { data: createResult, error: createError } = await supabase.rpc("auto_create_lead_from_place", {
+        p_google_place_id: place.id,
+        p_business_name: businessName,
+        p_city: city,
+        p_region: region,
+        p_category: category,
+        p_phone: phone,
+        p_email: scoutResult.emails[0]?.address ?? null,
+        p_website_url: scoutResult.websiteUrl,
+        p_address: null,
+        p_has_booking: scoutResult.hasBooking,
+        p_rating: null,
+        p_review_count: null,
+        p_estimated_value: 0,
+        p_origin: "manual",
+      });
+
+      if (createError) continue;
+      const result = createResult as { status: string; lead_id: string } | null;
+      if (!result || result.status === "duplicate") {
+        if (result?.status === "duplicate") resolvedPlaceIds.push(place.id);
+        continue;
+      }
+
+      const leadId = result.lead_id;
+      converted += 1;
+      resolvedPlaceIds.push(place.id);
+
+      await supabase.from("lead_events").insert({
+          lead_id: leadId,
+          actor_id: owner.id,
+          event_type: "scout_completed",
+          payload: {
+            status: scoutResult.status,
+            emails: scoutResult.emails,
+            phones: scoutResult.phones,
+            hasBooking: scoutResult.hasBooking,
+            hasChatbot: scoutResult.hasChatbot,
+            chatbotProvider: scoutResult.chatbotProvider,
+            socialChannels: scoutResult.socialChannels,
+            locations: scoutResult.locations,
+          } as unknown as Json,
+      });
+
+      const scoreResult = scoreLead({
+        businessName,
+        region,
+        category,
+        phone,
+        email: scoutResult.emails[0]?.address ?? null,
+        websiteUrl: scoutResult.websiteUrl,
+        rating: null,
+        reviewCount: null,
+        hasBooking: scoutResult.hasBooking,
+        businessStatus: null,
+        source: "google_places",
+        googlePlaceId: place.id,
+        websiteVerification: "verified_present",
+      });
+
+      const { error: scoreError } = await supabase.rpc("save_automated_deterministic_score", {
+        p_lead_id: leadId,
+        p_score: scoreResult.score,
+        p_grade: scoreResult.grade,
+        p_reasoning: scoreResult.reasoning,
+        p_positive_signals: scoreResult.positiveSignals,
+        p_negative_signals: scoreResult.negativeSignals,
+        p_confidence: scoreResult.confidence / 100,
+        p_version: scoreResult.version,
+        p_input_snapshot: { input: {}, scoringV2: scoreResult } as unknown as Json,
+        p_recommended_service_slug: scoreResult.recommendedService ?? "",
+      });
+      if (scoreError) throw scoreError;
+
+      if (reachOut && scoutResult.emails[0]?.address && !scoutResult.hasChatbot
+        && scoreResult.nextAction === "contact_now"
+        && scoreResult.score >= (settings?.default_score_threshold ?? 65)) {
+        const service = scoreResult.recommendedService
+          ? scoreResult.recommendedService.replace(/-/g, " ")
+          : "presenza digitale";
+        const { error: queueError } = await supabase.from("email_messages").insert({
+          lead_id: leadId,
+          recipient_email: scoutResult.emails[0].address,
+          recipient_name: businessName,
+          subject: `${service} per ${businessName}`,
+          body: withOptOut(`Buongiorno,\n\nabbiamo analizzato la presenza digitale di ${businessName} e abbiamo individuato alcune opportunità concrete per ${service}.\n\nIl nostro approccio è basato su dati verificabili e proponiamo solo interventi mirati e misurabili.\n\nSe desidera, possiamo condividere due spunti specifici in una breve chiamata conoscitiva, senza impegno.\n\nCordialmente,\nStudio Radar`),
+          status: "queued",
+          kind: "initial",
+          created_by: owner.id,
+        });
+        if (queueError) throw queueError;
+        queued += 1;
+      }
+    }
+
+    if (resolvedPlaceIds.length) {
+      const { error: cleanupError } = await supabase.from("lead_candidates")
+        .delete().in("google_place_id", resolvedPlaceIds);
+      if (cleanupError) throw cleanupError;
+    }
+
+    await supabase.from("scan_runs").update({
+      status: "succeeded",
+      found_count: placeIds.length,
+      imported_count: freshPlaces.length,
+      duplicate_count: placeIds.length - freshPlaces.length,
+      finished_at: new Date().toISOString(),
+    }).eq("id", scan.id);
+
+    revalidatePath("/");
+    revalidatePath("/leads");
+    revalidatePath("/outreach");
+    revalidatePath("/search");
+    redirect(`/outreach?success=Trovati%20${placeIds.length}%20·%20convertiti%20${converted}%20·%20scout%20${scouted}%20·%20email%20in%20coda%20${queued}`);
+  } catch (error) {
+    const code = error instanceof PlacesError ? error.code : "SCAN_FAILED";
+    await supabase.from("scan_runs").update({
+      status: "failed",
+      error_message: code,
+      finished_at: new Date().toISOString(),
+    }).eq("id", scan.id);
+    redirect(`/search?error=${encodeURIComponent(code === "QUOTA" ? "Quota Google Places esaurita. Riprova più tardi." : "Scansione non riuscita.")}`);
+  }
 }

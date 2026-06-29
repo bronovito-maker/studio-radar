@@ -61,6 +61,19 @@ Non includere invio automatico massivo WhatsApp senza:
 - verifica policy Meta;
 - controllo legale/compliance.
 
+## Email outreach massivo (Fase 8)
+
+L'email outreach massivo segue regole di sicurezza aggiuntive:
+
+- **Nessun invio automatico.** Il cron notturno prepara le email in stato `queued` ma non le invia mai. Solo un admin autenticato può attivare l'invio tramite pulsante "Approva e invia".
+- **Anti-ban Brevo.** Invio con delay di 1.5 secondi tra email, rispetto del limite giornaliero, stop immediato su rate limit 429.
+- **Opt-out obbligatorio.** Ogni email include il footer di disiscrizione.
+- **Solo contatti reali.** Le email vengono preparate solo se il web scouting ha estratto un'email reale dal sito aziendale. Mai indirizzi `info@` indovinati.
+- **Filtro chatbot.** Lead con chatbot concorrenti (Intercom, Drift, Tawk, ecc.) vengono automaticamente esclusi dalla coda email.
+- **Nessun dato sensibile.** Il web scouting estrae solo dati pubblici già visibili sui siti web aziendali.
+- **Protezione SSRF.** Lo scout accetta solo HTTP(S), valida ogni redirect e risoluzione DNS, blocca reti private/locali e limita realmente ogni risposta a 300KB.
+- **Limite atomico.** La prenotazione delle email dovute avviene in PostgreSQL sotto lock, evitando sforamenti in caso di click concorrenti.
+
 ## Privacy
 
 - Salvare solo dati necessari al processo commerciale.

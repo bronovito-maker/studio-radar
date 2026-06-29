@@ -9,9 +9,8 @@ import {
   type DiscoverySearchState,
 } from "@/app/search/actions";
 import { DISCOVERY_CATEGORIES } from "@/lib/places/categories";
+import { REGIONS } from "@/lib/crm";
 import { ShortlistButton } from "@/components/shortlist-button";
-
-const REGIONS = ["Emilia-Romagna", "Toscana", "Lombardia"] as const;
 const INITIAL_STATE: DiscoverySearchState = { status: "idle", results: [] };
 
 function gradeLabel(grade: DiscoveryResult["score"]["grade"]) {
@@ -47,8 +46,8 @@ export function DiscoverySearch({ configured }: { configured: boolean }) {
         </div>
         <div className="discovery-fields">
           <label className="field"><span>Categoria</span><select name="category" defaultValue={DISCOVERY_CATEGORIES[0]}>{DISCOVERY_CATEGORIES.map((category) => <option key={category} value={category}>{category}</option>)}</select></label>
-          <label className="field"><span>Città o zona</span><input name="location" placeholder="es. Bologna" required minLength={2} maxLength={100} /></label>
-          <label className="field"><span>Regione</span><select name="region" defaultValue="Emilia-Romagna">{REGIONS.map((region) => <option key={region} value={region}>{region}</option>)}</select></label>
+          <label className="field"><span>Città o zona</span><input name="location" placeholder="es. Bologna (puoi lasciare vuoto)" maxLength={100} /></label>
+          <label className="field"><span>Regione</span><select name="region" defaultValue=""><option value="">Qualsiasi regione</option>{REGIONS.map((region) => <option key={region} value={region}>{region}</option>)}</select></label>
           <label className="field discovery-limit"><span>Risultati</span><select name="pageSize" defaultValue="10"><option value="5">5</option><option value="10">10</option><option value="20">20</option></select></label>
           <button className="primary-button discovery-submit" type="submit" disabled={pending || !configured}>
             {pending ? <LoaderCircle className="spin" size={17} /> : <Search size={17} />}

@@ -26,7 +26,28 @@ export const SOURCE_LABELS: Record<
   google_places: "Google Places",
 };
 
-export const REGIONS = ["Emilia-Romagna", "Toscana", "Lombardia"] as const;
+export const REGIONS = [
+  "Abruzzo",
+  "Basilicata",
+  "Calabria",
+  "Campania",
+  "Emilia-Romagna",
+  "Friuli-Venezia Giulia",
+  "Lazio",
+  "Liguria",
+  "Lombardia",
+  "Marche",
+  "Molise",
+  "Piemonte",
+  "Puglia",
+  "Sardegna",
+  "Sicilia",
+  "Toscana",
+  "Trentino-Alto Adige",
+  "Umbria",
+  "Valle d'Aosta",
+  "Veneto",
+] as const;
 
 export function formatCurrency(value: number) {
   return new Intl.NumberFormat("it-IT", {

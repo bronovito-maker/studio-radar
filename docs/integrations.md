@@ -37,7 +37,7 @@ In produzione applicare anche una restrizione adatta al backend e monitorare quo
 - Uno scheduler esterno richiama `GET /api/cron/discovery` alle 03:00 UTC.
 - La route richiede `Authorization: Bearer <CRON_SECRET>`.
 - Categoria, citta e regione sono configurabili dagli admin.
-- Ogni run richiede al massimo 10 risultati e salva in shortlist soltanto Place ID nuovi.
+- Ogni run salva in shortlist soltanto Place ID nuovi e contesto interno della ricerca.
 - Un indice parziale impedisce due run cron contemporanee; run bloccate da oltre 30 minuti vengono chiuse come fallite.
 
 ## OpenAI
@@ -104,6 +104,37 @@ In produzione applicare anche una restrizione adatta al backend e monitorare quo
 4. Abilitare prima l'invio e poi, separatamente, i follow-up automatici.
 
 Le risposte nella casella reply-to vengono registrate manualmente dal CRM; l'inbound parsing automatico non è ancora attivo.
+
+## Web Scouting
+
+### Uso implementato (Fase 8)
+
+- Crawling HTTP dei siti web aziendali scoperti via Google Places.
+- Estrazione di contatti pubblici: email, telefono (mobile/fisso IT).
+- Rilevazione segnali commerciali: sistema di prenotazione, WhatsApp, chatbot concorrenti, form di contatto.
+- Rilevazione canali social: Facebook, Instagram, LinkedIn, TikTok, YouTube, Tripadvisor.
+- Rilevazione sedi multiple da pattern di indirizzi italiani.
+- Crawling di homepage + fino a 2 sottopagine sullo stesso dominio (/contatti, /prenota, /chi-siamo, /sedi).
+- Zero dipendenze esterne: solo `fetch()` nativo di Node.js e regex.
+- User-Agent dichiarato: `StudioRadar/1.0 (B2B lead research)`.
+- Timeout 6 secondi sulla homepage e 3 secondi per sottopagina; massimo effettivo 300KB HTML letto in streaming.
+- URL, redirect e risoluzioni DNS verso reti private/locali vengono bloccati per prevenire SSRF.
+
+### Regole
+
+- Solo dati già pubblicamente visibili sui siti web.
+- Nessun accesso ad aree protette da autenticazione.
+- Nessuno scraping di motori di ricerca o social network.
+- Nessun dato persistito dai risultati Places (ADR 0005).
+- Le email estratte vengono usate solo per outreach B2B legittimo con opt-out in ogni messaggio.
+
+### Anti-ban Brevo
+
+- Delay di 1.5 secondi tra ogni invio email.
+- Rispetto del limite giornaliero configurabile (`email_daily_limit`).
+- Stop immediato su risposta 429 (rate limit) di Brevo.
+- Retry intelligente per errori di rete (riprogrammato a 24 ore).
+- Nessun invio automatico notturno: solo approvazione manuale dell'admin.
 
 ## Notion
 

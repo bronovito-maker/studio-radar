@@ -2,17 +2,27 @@ import { Bookmark, ChevronRight, Clock3, ExternalLink, Search, Trash2 } from "lu
 import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
 import { DiscoverySearch } from "@/components/discovery-search";
+import { SubmitButton } from "@/components/submit-button";
 import { requireViewer } from "@/lib/auth";
 import { formatDate } from "@/lib/crm";
 import { getGooglePlaceSummary, isPlacesConfigured } from "@/lib/places/client";
+import { DISCOVERY_CATEGORIES } from "@/lib/places/categories";
+import { REGIONS } from "@/lib/crm";
 import { createClient } from "@/lib/supabase/server";
 import { removeCandidateAction } from "./actions";
+import { triggerManualDiscoveryAction } from "@/app/leads/actions";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 300;
 
 const SCAN_STATUS = { running: "In corso", succeeded: "Completata", failed: "Non riuscita" } as const;
 
-export default async function SearchPage() {
+type SearchPageProps = {
+  searchParams: Promise<{ error?: string; success?: string }>;
+};
+
+export default async function SearchPage({ searchParams }: SearchPageProps) {
+  const feedback = await searchParams;
   const viewer = await requireViewer();
   const supabase = await createClient();
   const [{ data: scans }, { data: candidates }] = await Promise.all([
@@ -41,6 +51,52 @@ export default async function SearchPage() {
 
   return (
     <AppShell active="search" eyebrow="Discovery" title="Ricerca lead" viewer={viewer}>
+      {feedback.error ? <div className="alert alert-error" role="alert">{feedback.error}</div> : null}
+      {feedback.success ? <div className="alert alert-success" role="status">{feedback.success}</div> : null}
+
+      {/* ── Manual discovery trigger (admin-only) ─────────────────────── */}
+      {viewer.role === "admin" && isPlacesConfigured() ? (
+        <section className="panel manual-scan-panel">
+          <div className="panel-header">
+            <div>
+              <p className="eyebrow">Scansione massiva</p>
+              <h2>Trova e prepara lead in automatico</h2>
+            </div>
+          </div>
+          <p>Cerca fino a 50 aziende, visita i loro siti web, estrae contatti reali e prepara le email in coda — tutto in una volta. Poi approvi l&apos;invio dalla pagina Outreach.</p>
+          <form className="settings-form" action={triggerManualDiscoveryAction}>
+            <div className="form-grid two-columns">
+              <label className="field">
+                <span>Categoria</span>
+                <select name="category" defaultValue={DISCOVERY_CATEGORIES[0]}>
+                  {DISCOVERY_CATEGORIES.map((c) => <option value={c} key={c}>{c}</option>)}
+                </select>
+              </label>
+              <label className="field">
+                <span>Città o zona</span>
+                <input name="location" maxLength={100} placeholder="es. Bologna (puoi lasciare vuoto)" />
+              </label>
+              <label className="field">
+                <span>Regione</span>
+                <select name="region" defaultValue="">
+                  <option value="">Qualsiasi regione</option>
+                  {REGIONS.map((region) => <option key={region} value={region}>{region}</option>)}
+                </select>
+              </label>
+              <label className="field">
+                <span>Risultati</span>
+                <input name="pageSize" type="number" min={1} max={50} defaultValue={20} />
+              </label>
+            </div>
+            <div className="form-actions">
+              <SubmitButton className="primary-button" pendingLabel="Scansione in corso...">
+                <Search size={16} /> Scansiona ora
+              </SubmitButton>
+            </div>
+          </form>
+        </section>
+      ) : null}
+
       <DiscoverySearch configured={isPlacesConfigured()} />
       <section className="panel candidate-panel">
         <div className="panel-header"><div><p className="eyebrow">Selezione</p><h2>Shortlist condivisa</h2></div><span className="result-count">{candidates?.length ?? 0} candidati</span></div>

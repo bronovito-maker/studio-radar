@@ -19,9 +19,11 @@ import { createClient } from "@/lib/supabase/server";
 
 const searchSchema = z.object({
   category: z.enum(DISCOVERY_CATEGORIES),
-  location: z.string().trim().min(2).max(100),
-  region: z.enum(["Emilia-Romagna", "Toscana", "Lombardia"]),
+  location: z.string().trim().max(100).optional().default(""),
+  region: z.string().trim().max(100).optional().default(""),
   pageSize: z.coerce.number().int().min(5).max(20),
+}).refine((data) => (data.location.length >= 2 || data.region.length >= 2), {
+  message: "Inserisci almeno una città o una regione",
 });
 
 export type DiscoveryResult = {
@@ -78,8 +80,8 @@ export type CandidateFieldKey =
 const shortlistSchema = z.object({
   placeId: z.string().trim().min(1).max(2048),
   category: z.enum(DISCOVERY_CATEGORIES),
-  location: z.string().trim().min(2).max(100),
-  region: z.enum(["Emilia-Romagna", "Toscana", "Lombardia"]),
+  location: z.string().trim().max(100).optional().default(""),
+  region: z.string().trim().max(100).optional().default(""),
 });
 
 const confirmCandidateSchema = z.object({

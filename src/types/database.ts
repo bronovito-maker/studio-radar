@@ -88,6 +88,8 @@ export type Database = {
           email_follow_up_delays: number[];
           notion_sync_enabled: boolean;
           sheets_sync_enabled: boolean;
+          cron_page_size: number;
+          email_auto_outreach_enabled: boolean;
           created_at: string;
           updated_at: string;
         };
@@ -109,6 +111,8 @@ export type Database = {
           email_follow_up_delays?: number[];
           notion_sync_enabled?: boolean;
           sheets_sync_enabled?: boolean;
+          cron_page_size?: number;
+          email_auto_outreach_enabled?: boolean;
           created_at?: string;
           updated_at?: string;
         };
@@ -546,6 +550,33 @@ export type Database = {
           p_has_booking?: boolean;
           p_estimated_value?: number;
         };
+        Returns: Json;
+      };
+      auto_create_lead_from_place: {
+        Args: {
+          p_google_place_id: string;
+          p_business_name: string;
+          p_city?: string | null;
+          p_region?: string | null;
+          p_category?: string | null;
+          p_phone?: string | null;
+          p_email?: string | null;
+          p_website_url?: string | null;
+          p_address?: string | null;
+          p_has_booking?: boolean;
+          p_rating?: number | null;
+          p_review_count?: number | null;
+          p_estimated_value?: number;
+          p_origin?: "cron" | "manual";
+        };
+        Returns: Json;
+      };
+      save_automated_deterministic_score: {
+        Args: Database["public"]["Functions"]["save_deterministic_score"]["Args"];
+        Returns: string;
+      };
+      claim_queued_initial_emails: {
+        Args: { p_requested_limit?: number };
         Returns: Json;
       };
       record_manual_outreach: {

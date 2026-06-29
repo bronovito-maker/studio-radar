@@ -98,15 +98,29 @@ async function requestPlaces(body: Record<string, unknown>, apiKey: string) {
 
 export async function searchGooglePlaces(input: {
   category: string;
-  location: string;
-  region: string;
+  location?: string | null;
+  region?: string | null;
   pageSize: number;
 }) {
   const apiKey = process.env.GOOGLE_PLACES_API_KEY?.trim();
   if (!apiKey) throw new PlacesError("NOT_CONFIGURED", "Chiave Google Places non configurata");
 
+  // Build dynamic query: supports city-only, region-only, or both.
+  const loc = (input.location ?? "").trim();
+  const reg = (input.region ?? "").trim();
+  let textQuery: string;
+  if (loc && reg) {
+    textQuery = `${input.category} a ${loc}, ${reg}, Italia`;
+  } else if (loc) {
+    textQuery = `${input.category} a ${loc}, Italia`;
+  } else if (reg) {
+    textQuery = `${input.category} in ${reg}, Italia`;
+  } else {
+    textQuery = `${input.category} in Italia`;
+  }
+
   const body = {
-    textQuery: `${input.category} a ${input.location}, ${input.region}, Italia`,
+    textQuery,
     languageCode: "it",
     regionCode: "IT",
     pageSize: input.pageSize,
@@ -124,6 +138,101 @@ export async function searchGooglePlaces(input: {
   const parsed = responseSchema.safeParse(await response.json());
   if (!parsed.success) throw new PlacesError("INVALID_RESPONSE", "Risposta Google Places non valida");
   return parsed.data.places;
+}
+
+/** Batch search: makes multiple queries to collect up to targetCount unique Place IDs.
+ *  Google Places Text Search caps at 20 results per call, so we vary the query
+ *  formulation with sub-area modifiers to gather more candidates. */
+export async function searchGooglePlacesBatch(input: {
+  category: string;
+  location?: string | null;
+  region?: string | null;
+  targetCount: number;
+}) {
+  const perQuery = 20; // Google max pageSize for text search
+  const maxQueries = Math.ceil(input.targetCount / perQuery);
+
+  const loc = (input.location ?? "").trim();
+  const reg = (input.region ?? "").trim();
+
+  // Base query with whatever is provided.
+  let baseQuery: string;
+  if (loc && reg) baseQuery = `${input.category} a ${loc}, ${reg}, Italia`;
+  else if (loc) baseQuery = `${input.category} a ${loc}, Italia`;
+  else if (reg) baseQuery = `${input.category} in ${reg}, Italia`;
+  else baseQuery = `${input.category} in Italia`;
+
+  const queryModifiers = loc
+    ? [
+        "",                              // base query
+        `centro ${loc}`,                 // city center
+        `zona ${loc}`,                   // zone area
+        `${loc} provincia`,             // province
+        `vicino ${loc}`,                // near location
+      ]
+    : reg
+      ? ["", `capoluoghi ${reg}`, `provincia ${reg}`]
+      : ["", "principali città", "capoluoghi di regione"];
+
+  const seen = new Set<string>();
+  const allPlaces: GooglePlace[] = [];
+
+  for (let i = 0; i < maxQueries && i < queryModifiers.length; i++) {
+    const modifier = queryModifiers[i];
+    let textQuery: string;
+    if (modifier && loc) {
+      // Modifier already includes the location (e.g., "centro Bologna").
+      textQuery = reg
+        ? `${input.category} ${modifier}, ${reg}, Italia`
+        : `${input.category} ${modifier}, Italia`;
+    } else if (modifier) {
+      textQuery = `${input.category} ${modifier}, Italia`;
+    } else {
+      textQuery = baseQuery;
+    }
+
+    const apiKey = process.env.GOOGLE_PLACES_API_KEY?.trim();
+    if (!apiKey) throw new PlacesError("NOT_CONFIGURED", "Chiave Google Places non configurata");
+
+    const body = { textQuery, languageCode: "it", regionCode: "IT", pageSize: perQuery };
+
+    let response = await requestPlaces(body, apiKey);
+    if (response.status >= 500) {
+      await new Promise((resolve) => setTimeout(resolve, 600));
+      response = await requestPlaces(body, apiKey);
+    }
+
+    if (response.status === 429) {
+      if (allPlaces.length > 0) break; // quota exhausted, return what we have
+      throw new PlacesError("QUOTA", "Quota Google Places temporaneamente esaurita");
+    }
+    if (!response.ok) {
+      if (allPlaces.length > 0) break;
+      throw new PlacesError("REQUEST_FAILED", `Google Places HTTP ${response.status}`);
+    }
+
+    const parsed = responseSchema.safeParse(await response.json());
+    if (!parsed.success) {
+      if (allPlaces.length > 0) break;
+      throw new PlacesError("INVALID_RESPONSE", "Risposta Google Places non valida");
+    }
+
+    for (const place of parsed.data.places) {
+      if (!seen.has(place.id)) {
+        seen.add(place.id);
+        allPlaces.push(place);
+      }
+    }
+
+    if (allPlaces.length >= input.targetCount) break;
+
+    // Small delay between queries to avoid hammering the API
+    if (i < maxQueries - 1) {
+      await new Promise((resolve) => setTimeout(resolve, 200));
+    }
+  }
+
+  return allPlaces.slice(0, input.targetCount);
 }
 
 export async function getGooglePlaceSummary(placeId: string) {
