@@ -56,6 +56,19 @@ describe("scoreLead V2", () => {
     expect(irrelevant.offerScores.booking).toBe(0);
   });
 
+  it("rende contattabile un lead scoutato usando reputazione Places solo nel calcolo", () => {
+    const result = scoreLead({
+      ...strongRestaurant,
+      category: "centro estetico e spa",
+      websiteUrl: "https://example.com",
+      websiteVerification: "verified_present",
+      hasBooking: false,
+    });
+    expect(result.score).toBeGreaterThanOrEqual(65);
+    expect(result.confidence).toBeGreaterThanOrEqual(75);
+    expect(result.nextAction).toBe("contact_now");
+  });
+
   it("non valuta restyling e automazioni senza analisi digitale", () => {
     const result = scoreLead({
       ...strongRestaurant,
